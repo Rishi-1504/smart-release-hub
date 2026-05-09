@@ -77,6 +77,8 @@ The system evaluates release health using the following weighted rubric:
 -   **Open Blockers (Jira)**: -15 points each
 -   **Failed Builds (GitHub Actions)**: -25 points each
 -   **Unmerged PRs (GitHub)**: -5 points each
+-   **Untested Tickets (Jira/QA)**: -10 points each
+-   **Pending Approvals (GitHub/Management)**: -10 points each
 -   **Verdict**: GO if score ≥ 70%, else NO-GO.
 
 ### AI Personas (Prompt Engineering)
@@ -89,6 +91,12 @@ The backend implements a graceful degradation strategy. If the Gemini API is una
 
 ## Development Workflows
 -   **Starting Backend**: `source venv/bin/activate && uvicorn main:app --reload`
+-   **Starting Frontend**: `cd frontend && npm run dev`
+-   **Port Mapping**: Backend runs on `8000`, Frontend runs on `5173`.
+
+## Architecture Note
+This is a Decoupled Full-Stack Architecture. The frontend and backend are standalone services communicating via RESTful JSON APIs. CORS is enabled on the backend to allow requests from the frontend origin.
+bin/activate && uvicorn main:app --reload`
 -   **Starting Frontend**: `cd frontend && npm run dev`
 -   **Port Mapping**: Backend runs on `8000`, Frontend runs on `5173`.
 
