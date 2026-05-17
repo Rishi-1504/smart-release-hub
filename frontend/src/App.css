@@ -1,129 +1,104 @@
-/* App.css - Premium AI Hub Styles */
-
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 :root {
-  --brand-primary: #6366f1;
-  --brand-success: #10b981;
-  --brand-accent: #8b5cf6;
-  --bg-main: #fcfcfd;
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.5);
+  --brand-primary: #000000;
+  --font-main: 'Inter', sans-serif;
+  --bg-color: #f2f2f2;
 }
 
+/* Brutalist Base Styles */
 body {
-  background: radial-gradient(circle at top right, #eef2ff 0%, #f8fafc 100%);
-  min-height: 100vh;
+  margin: 0;
+  font-family: var(--font-main);
+  @apply transition-colors duration-300 bg-[#f2f2f2] text-black;
 }
 
-.glass-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+.dark body {
+  @apply bg-[#000000] text-white;
 }
 
-.tab-transition {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* Lekollektiv-Inspired Sidebar */
+.sidebar-light {
+  background-color: #f2f2f2;
+  border-right: 2px solid #000;
 }
 
-/* Markdown Typography */
+.dark .sidebar-dark {
+  background-color: #000;
+  border-right: 2px solid #fff;
+}
+
+/* The "Main Block" Brutalist Style */
+.premium-card {
+  @apply bg-white dark:bg-black border-[2.5px] border-black dark:border-white rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] transition-all duration-200;
+}
+
+.premium-card:hover {
+  @apply translate-x-[-2px] translate-y-[-2px] shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] dark:shadow-[10px_10px_0px_0px_rgba(255,255,255,1)];
+}
+
+/* Brutalist Tabs */
+.tab-active {
+  @apply bg-black text-white dark:bg-white dark:text-black border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)];
+}
+
+.tab-inactive {
+  @apply text-black dark:text-white border-2 border-black dark:border-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors font-black uppercase tracking-tighter;
+}
+
+/* Typography Overhaul */
+h1, h2, h3 {
+  @apply font-black uppercase tracking-tighter leading-none;
+}
+
 .markdown-content {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  color: #334155;
-  line-height: 1.8;
-  font-size: 1.05rem;
+  @apply leading-snug text-black dark:text-white;
 }
 
-.markdown-content h1 {
-  font-size: 2.25rem;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -0.025em;
-  margin-top: 2rem;
-  margin-bottom: 1rem;
-  line-height: 1.2;
-}
-
-.markdown-content h2 {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1e293b;
-  letter-spacing: -0.02em;
-  margin-top: 1.75rem;
-  margin-bottom: 0.75rem;
-  border-bottom: 2px solid #f1f5f9;
-  padding-bottom: 0.5rem;
-}
-
-.markdown-content h3 {
-  font-size: 1.35rem;
-  font-weight: 600;
-  color: #334155;
-  margin-top: 1.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.markdown-content p {
-  margin-bottom: 1.25rem;
-}
-
-.markdown-content ul, .markdown-content ol {
-  margin-bottom: 1.5rem;
-  padding-left: 1.5rem;
-}
-
-.markdown-content li {
-  margin-bottom: 0.625rem;
-  position: relative;
-}
-
-.markdown-content ul li::before {
-  content: "•";
-  color: var(--brand-primary);
-  font-weight: bold;
-  display: inline-block;
-  width: 1em;
-  margin-left: -1em;
-}
-
-.markdown-content strong {
-  color: #0f172a;
-  font-weight: 700;
-}
+.markdown-content h1 { @apply text-5xl mb-8 border-b-4 border-black dark:border-white pb-2; }
+.markdown-content h2 { @apply text-3xl mb-4 border-b-2 border-black dark:border-white pb-1; }
 
 .markdown-content code {
-  background: #f1f5f9;
-  color: #475569;
-  padding: 0.2rem 0.4rem;
-  border-radius: 6px;
-  font-size: 0.9em;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  @apply bg-black/10 dark:bg-white/10 text-black dark:text-white px-1 font-bold border-b-2 border-black dark:border-white;
 }
 
 .markdown-content pre {
-  background: #0f172a;
-  color: #f8fafc;
-  padding: 1.5rem;
-  border-radius: 12px;
-  overflow-x: auto;
-  margin: 1.5rem 0;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.markdown-content pre code {
-  background: transparent;
-  color: inherit;
-  padding: 0;
+  @apply bg-white dark:bg-black p-6 border-4 border-black dark:border-white shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] dark:shadow-[12px_12px_0px_0px_rgba(255,255,255,1)] my-8;
 }
 
 .markdown-content blockquote {
-  border-left: 4px solid var(--brand-primary);
-  background: #f8fafc;
-  padding: 1.25rem 1.5rem;
-  border-radius: 0 8px 8px 0;
-  font-style: italic;
-  color: #475569;
-  margin: 1.5rem 0;
+  @apply border-l-8 border-black dark:border-white bg-black/5 dark:bg-white/5 px-8 py-6 italic my-8;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-[#f2f2f2] dark:bg-black border-l-2 border-black dark:border-white;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-black dark:bg-white border-2 border-black dark:border-white;
+}
+
+/* Realistic LED Blink */
+@keyframes led-blink {
+  0% { background-color: #10b981; box-shadow: 0 0 15px rgba(16,185,129,1); opacity: 1; }
+  50% { background-color: #064e3b; opacity: 0.2; box-shadow: none; }
+  100% { background-color: #10b981; box-shadow: 0 0 15px rgba(16,185,129,1); opacity: 1; }
+}
+
+.animate-led {
+  animation: led-blink 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes led-error {
+  0% { background-color: #ef4444; box-shadow: 0 0 15px rgba(239,68,68,1); opacity: 1; }
+  50% { background-color: #450a0a; opacity: 0.2; box-shadow: none; }
+  100% { background-color: #ef4444; box-shadow: 0 0 15px rgba(239,68,68,1); opacity: 1; }
+}
+
+.animate-led-error {
+  animation: led-error 0.6s ease-in-out infinite;
 }

@@ -1,25 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { Rocket, FileText, CheckCircle, Zap, Cpu, BarChart3, AlertTriangle, ShieldCheck } from 'lucide-react';
 import axios from 'axios';
 import { marked } from 'marked';
 import './App.css';
 
+// Components
+import Sidebar from './components/Sidebar';
+import DashboardLayout from './components/DashboardLayout';
+import MetricsOverview from './components/MetricsOverview';
+import AiGenerationPanel from './components/AiGenerationPanel';
+
 function App() {
   const [activeTab, setActiveTab] = useState('technical');
   const [content, setContent] = useState('### System Ready\n\nSelect an operation persona above to initialize AI generation.');
-  const [readiness, setReadiness] = useState({ score: 100, verdict: 'GO', details: [] });
+  const [readiness, setReadiness] = useState({ score: 0, verdict: 'INIT', details: [], status: 'initializing' });
   const [loading, setLoading] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [activeView, setActiveView] = useState('dashboard');
+  const [lastSynced, setLastSynced] = useState(new Date().toLocaleTimeString());
 
   useEffect(() => {
     fetchReadiness();
+
+    // AUTO-SYNC HEARTBEAT: Poll every 30 seconds
+    const interval = setInterval(() => {
+      fetchReadiness();
+    }, 30000);
+
+    return () => clearInterval(interval); // Cleanup on unmount
   }, []);
 
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
   const fetchReadiness = async () => {
+    console.log("DEBUG: Auto-Syncing Data...");
+    setReadiness(prev => ({ ...prev, status: 'updating' }));
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/readiness');
-      setReadiness(response.data);
+      const url = `/api/readiness?t=${Date.now()}`;
+      const response = await axios.get(url, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      setReadiness({ ...response.data, status: 'live' });
+      setLastSynced(new Date().toLocaleTimeString());
     } catch (error) {
-      console.error("Readiness fetch failed");
+      console.error("Readiness fetch failed:", error.message);
+      setReadiness(prev => ({ ...prev, status: 'error' }));
     }
   };
 
@@ -32,11 +62,12 @@ function App() {
   const fetchNotes = async (type) => {
     setActiveTab(type);
     setLoading(true);
-    setContent('_Establishing neural link and synthesizing data..._');
     try {
-      const response = await axios.post(`http://127.0.0.1:8000/api/generate-notes`, {
+      const response = await axios.post(`/api/generate-notes`, {
         variant: type,
         raw_data: "" 
+      }, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
       });
       setContent(response.data.content);
       fetchReadiness(); // Refresh score after generation
@@ -47,145 +78,99 @@ function App() {
     }
   };
 
-  const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const renderContent = () => {
+    switch(activeView) {
+      case 'dashboard':
+        return (
+          <>
+            <MetricsOverview readiness={readiness} />
+            <AiGenerationPanel 
+              activeTab={activeTab}
+              fetchNotes={fetchNotes}
+              content={content}
+              loading={loading}
+              getMarkdownText={getMarkdownText}
+            />
+          </>
+        );
+      case 'notes':
+        return (
+          <AiGenerationPanel 
+            activeTab={activeTab}
+            fetchNotes={fetchNotes}
+            content={content}
+            loading={loading}
+            getMarkdownText={getMarkdownText}
+          />
+        );
+      case 'readiness':
+        return <MetricsOverview readiness={readiness} />;
+      case 'settings':
+        return (
+          <div className="premium-card p-12">
+            <h2 className="text-4xl font-black text-black dark:text-white mb-8 uppercase tracking-tighter">System Settings</h2>
+            
+            <div className="space-y-8">
+              <div className="pt-6 border-t-4 border-black dark:border-white">
+                <p className="text-xs font-black uppercase tracking-widest text-black/40 dark:text-white/40 mb-4">Integrations Status</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 border-2 border-black dark:border-white font-black text-[10px] uppercase bg-[#f2f2f2] dark:bg-black">Jira: Connected</div>
+                  <div className="p-4 border-2 border-black dark:border-white font-black text-[10px] uppercase bg-[#f2f2f2] dark:bg-black">GitHub: Connected</div>
+                </div>
+              </div>
+              <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest italic">
+                * Single-Origin Deployment Active. Neural link is automatic.
+              </p>
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="min-h-screen selection:bg-indigo-100 selection:text-indigo-900">
-      {/* Dynamic Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-indigo-100/40 rounded-full blur-[120px]" />
-        <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-violet-100/30 rounded-full blur-[100px]" />
-      </div>
-
-      <div className="relative max-w-6xl mx-auto px-6 pt-20 pb-20">
-        {/* Header Section */}
-        <header className="flex flex-col items-center mb-16 text-center">
-          <div className="flex items-center gap-2 px-3 py-1 mb-6 rounded-full bg-white/60 border border-white/50 shadow-sm backdrop-blur-md">
-            <Zap size={14} className="text-indigo-600 fill-indigo-600" />
-            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-indigo-900/60">Intelligence Hub</span>
-          </div>
-          <h1 className="text-6xl md:text-7xl font-extrabold text-slate-900 tracking-tight mb-6">
-            Smart Release <span className="italic font-serif text-indigo-600">Hub</span>
+    <DashboardLayout 
+      sidebar={
+        <Sidebar 
+          darkMode={darkMode} 
+          setDarkMode={setDarkMode} 
+          activeView={activeView} 
+          setActiveView={setActiveView} 
+        />
+      }
+    >
+      {/* Header Area - Brutalist Style */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-16 border-b-8 border-black dark:border-white pb-10">
+        <div>
+          <h1 className="text-6xl font-black text-black dark:text-white tracking-tighter uppercase mb-4">
+            {activeView === 'notes' ? 'Release Notes' : activeView}
           </h1>
-          
-          {/* Readiness Score Card */}
-          <div className={`mt-4 mb-8 flex items-center gap-8 px-8 py-4 rounded-[24px] border backdrop-blur-md transition-all duration-500 ${
-            readiness.verdict === 'GO' ? 'bg-emerald-50/40 border-emerald-200/50' : 'bg-rose-50/40 border-rose-200/50'
-          }`}>
-            <div className="flex flex-col items-start">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Readiness Score</span>
-              <div className="flex items-baseline gap-2">
-                <span className={`text-4xl font-black ${readiness.verdict === 'GO' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {readiness.score}%
-                </span>
-                <span className="text-sm font-bold text-slate-400">/ 100</span>
-              </div>
-            </div>
-            
-            <div className="w-px h-12 bg-slate-200/50" />
-            
-            <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-2xl ${readiness.verdict === 'GO' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
-                {readiness.verdict === 'GO' ? <ShieldCheck size={28} /> : <AlertTriangle size={28} />}
-              </div>
-              <div className="flex flex-col items-start">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Verdict</span>
-                <span className={`text-xl font-black ${readiness.verdict === 'GO' ? 'text-emerald-700' : 'text-rose-700'}`}>
-                  {readiness.verdict}
-                </span>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Tab Navigation */}
-        <div className="flex flex-wrap items-center justify-center gap-4 mb-12 p-2 rounded-2xl bg-white/40 border border-white/60 backdrop-blur-xl shadow-inner max-w-2xl mx-auto">
-          <button 
-            disabled={loading}
-            onClick={() => fetchNotes('technical')} 
-            className={`tab-transition flex items-center gap-2.5 px-6 py-3 rounded-xl font-bold text-sm ${
-              activeTab === 'technical' 
-              ? 'bg-slate-900 text-white shadow-lg shadow-slate-200' 
-              : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'
-            }`}
-          >
-            <Cpu size={18} />
-            Technical
-          </button>
-          
-          <button 
-            disabled={loading}
-            onClick={() => fetchNotes('qa')} 
-            className={`tab-transition flex items-center gap-2.5 px-6 py-3 rounded-xl font-bold text-sm ${
-              activeTab === 'qa' 
-              ? 'bg-slate-900 text-white shadow-lg shadow-slate-200' 
-              : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'
-            }`}
-          >
-            <CheckCircle size={18} />
-            QA Summary
-          </button>
-          
-          <button 
-            disabled={loading}
-            onClick={() => fetchNotes('executive')} 
-            className={`tab-transition flex items-center gap-2.5 px-6 py-3 rounded-xl font-bold text-sm ${
-              activeTab === 'executive' 
-              ? 'bg-slate-900 text-white shadow-lg shadow-slate-200' 
-              : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'
-            }`}
-          >
-            <BarChart3 size={18} />
-            Executive
-          </button>
+          <p className="text-xl font-bold text-black dark:text-white uppercase tracking-tight opacity-60">
+            Neural Intelligence for Software Operations
+          </p>
         </div>
-
-        {/* Main Display Area */}
-        <div className="glass-card rounded-[40px] overflow-hidden">
-          {/* Internal Header */}
-          <div className="flex items-center justify-between px-10 py-6 border-b border-slate-200/60 bg-white/20">
-            <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${loading ? 'animate-pulse' : ''} ${
-                activeTab === 'technical' ? 'bg-indigo-500' : 
-                activeTab === 'qa' ? 'bg-emerald-500' : 'bg-violet-500'
-              }`} />
-              <h2 className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
-                {capitalize(activeTab)} View
-              </h2>
-            </div>
-            <div className="hidden sm:flex items-center gap-6">
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Status</span>
-                <span className="text-[11px] font-mono font-bold text-indigo-600">{loading ? 'Synthesizing...' : 'Live Data'}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Content Wrapper */}
-          <div className="relative min-h-[500px] p-10 md:p-20 bg-white/40">
-            {/* Subtle Texture Overlay */}
-            <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
-            
-            <article 
-              className={`relative markdown-content transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}
-              dangerouslySetInnerHTML={getMarkdownText()} 
-            />
+        
+        <div className="flex items-center gap-4 px-6 py-3 border-4 border-black dark:border-white bg-white dark:bg-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+          <div className={`h-4 w-4 border-2 border-black dark:border-white ${readiness.status === 'error' ? 'animate-led-error' : 'animate-led'}`} />
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black text-black dark:text-white uppercase tracking-[0.2em] leading-none mb-1">Neural Sync</span>
+            <span className="text-[9px] font-bold text-black/50 dark:text-white/50 uppercase tracking-widest leading-none">Last: {lastSynced}</span>
           </div>
         </div>
-
-        {/* Details Footer */}
-        {readiness.details.length > 0 && (
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {readiness.details.map((detail, index) => (
-              <div key={index} className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-white/30 border border-white/50 backdrop-blur-sm">
-                <AlertTriangle size={16} className="text-rose-500" />
-                <span className="text-xs font-medium text-slate-600">{detail}</span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
-    </div>
+
+      {/* Dynamic Content Section */}
+      {renderContent()}
+
+      <footer className="mt-20 py-10 border-t-8 border-black dark:border-white flex flex-col md:flex-row justify-between items-center gap-6">
+        <span className="text-sm font-black text-black dark:text-white uppercase tracking-[0.3em]">Smart Release Intelligence Hub // 2026</span>
+        <div className="flex items-center gap-6">
+          <span className="text-xs font-black text-black dark:text-white uppercase px-4 py-2 border-2 border-black dark:border-white">Build v2.0.5-AUTO</span>
+          <span className="text-xs font-black text-black dark:text-white uppercase px-4 py-2 bg-black text-white dark:bg-white dark:text-black">Stable Link</span>
+        </div>
+      </footer>
+    </DashboardLayout>
   );
 }
 
