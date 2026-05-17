@@ -9,96 +9,62 @@ The Smart Release Intelligence Hub is an AI-powered release operations tool desi
 3.  **Data Integration**: Connect to Jira (tickets/sprints) and GitHub (PRs/commits) APIs.
 
 ## Tech Stack
--   **Backend**: Python 3.12 + FastAPI
+-   **Backend**: Python 3.12 + FastAPI (Acting as Single-Origin Web Server)
 -   **Frontend**: React.js (Vite) + Tailwind CSS
 -   **AI**: Google Gemini (gemini-1.5-flash) via `google-generativeai`
 -   **HTTP Client**: Axios (Frontend)
 -   **Environment**: `.env` for secrets (GEMINI_API_KEY)
 
-## Project Structure
+## Architecture: Single-Origin Deployment
+The application uses a **Single-Origin Architecture** where the FastAPI backend serves the compiled React frontend assets (`dist/`) and provides the REST API on the same port (**8000**). This simplifies deployment and tunneling, requiring only a single public URL.
+
+### Project Structure
 ```text
 smart-release-hub/
-├── main.py              # FastAPI backend logic & AI integration
+├── main.py              # FastAPI backend logic, AI integration & Static File Serving
 ├── .env                 # API keys (not committed)
 ├── venv/                # Python virtual environment
 └── frontend/            # React frontend (Vite project)
     ├── src/
-    │   ├── App.jsx      # Main dashboard & Tab logic
-    │   └── index.css    # Tailwind directives
-    └── ...
+    │   ├── components/  # Modular UI (Sidebar, Metrics, AI Panel)
+    │   ├── App.jsx      # Main dashboard & Auto-Sync logic
+    │   └── App.css      # Brutalist Minimalist Styling
+    └── dist/            # Compiled production assets (served by FastAPI)
 ```
 
-## Integration Details
+## UI/UX: Brutalist Minimalist Aesthetic
+The dashboard features a high-impact **Brutalist Minimalist** design inspired by industrial interfaces.
+-   **High Contrast**: Stark black borders (2.5px+) and hard-edged sharp shadows.
+-   **Industrial Indicators**: A realistic pulsing LED for "Neural Sync" with a live 30-second countdown timer.
+-   **Typography**: Bold use of the **Inter** font family with black (900) weights and tight tracking.
+-   **Theme Support**: Seamless transitions between high-contrast Light and Dark modes.
 
-### Jira Integration
--   **API**: Jira REST API (Cloud).
--   **Authentication**: Basic Auth (Email + API Token) or OAuth 2.0.
--   **Data Points**:
-    -   Sprint tickets and their current statuses (Done, In Progress, Blocked).
-    -   Story points for velocity and scope tracking.
-    -   Linked components and "Fix Version" metadata for specific release filtering.
--   **Purpose**: Fetch ticket-level data to feed the Readiness Score engine and provide context for AI-generated notes.
-
-### GitHub Integration
--   **API**: GitHub REST API (via `httpx` or Octokit-like pattern in Python).
--   **Authentication**: Personal Access Token (PAT).
--   **Data Points**:
-    -   **Pull Requests**: Merged PRs targeting the release branch, open PRs (blockers).
-    -   **Commits**: Commit messages for technical changelog generation.
-    -   **Actions/CI**: Build status of the latest workflow run on the release branch.
--   **Purpose**: Correlate code-level changes with Jira tickets and verify technical quality gates.
-
-## AI Integration Strategy
-
-### Role of Generative AI
-The AI acts as the **Contextual Translator** for raw engineering data. Instead of forcing all stakeholders to read raw commit logs or Jira ticket descriptions, the Gemini AI interprets the technical substance and "re-writes" it to match the mental model of the specific audience.
-
-### AI Capabilities & Value
--   **Summarization**: Condenses dozens of PRs and tickets into a cohesive narrative.
--   **Persona-Based Tone**:
-    -   *Technical*: Preserves jargon, focuses on implementation details and API contracts.
-    -   *QA*: Focuses on risk areas, regression paths, and "what changed" from a testing perspective.
-    -   *Executive*: Focuses on "Outcome" (e.g., "New checkout flow is now live") rather than "Output" (e.g., "Modified handlePayment.js").
--   **Consistency**: Ensures release communications follow a standard format every sprint, reducing human variability.
-
-## Frontend Architecture & UI Planning
-
-
-### Visual Design Principles
--   **Urgency Signaling**: Use of color (Red/Amber/Green) to immediately communicate the "Go/No-Go" status.
--   **Information Density**: Using accordions and tabs to prevent "data wall" fatigue while keeping detailed logs accessible.
--   **Interactive Feedback**: Loading states (skeletons) during AI generation to indicate the "thinking" process.
+## Real-Time Synchronization
+The dashboard implements a **Neural Sync Heartbeat**:
+-   **Polling**: Automatically fetches fresh Jira/GitHub data every 30 seconds.
+-   **Live Feedback**: Displays "Last Synced" timestamp and "Next Sync" countdown in the header.
+-   **Cache Busting**: Uses timestamped URL parameters to ensure mobile browsers always display live data.
 
 ## Implementation Details
 
 ### Release Readiness Score Formula
-The system evaluates release health using the following weighted rubric:
+The system evaluates release health using a weighted rubric with **Category Capping** to prevent minor issues from disproportionately tanking the score:
 -   **Base Score**: 100%
--   **Open Blockers (Jira)**: -15 points each
--   **Failed Builds (GitHub Actions)**: -25 points each
--   **Unmerged PRs (GitHub)**: -5 points each
--   **Untested Tickets (Jira/QA)**: -10 points each
--   **Pending Approvals (GitHub/Management)**: -10 points each
+-   **Open Blockers (Jira)**: -15 points each (UNCAPPED - Critical)
+-   **Untested Tickets (Jira)**: -10 points each (CAPPED at -40 pts)
+-   **Failed Builds (GitHub)**: -25 points (Fixed Deduction)
+-   **Unmerged PRs (GitHub)**: -5 points each (CAPPED at -30 pts)
+-   **Pending Approvals (GitHub)**: -10 points each (CAPPED at -40 pts)
 -   **Verdict**: GO if score ≥ 70%, else NO-GO.
 
-### AI Personas (Prompt Engineering)
--   **Technical**: Senior Engineer persona. Detailed changelog, file changes, API updates.
--   **QA/Scrum**: Scrum Master persona. Plain language, focus on what to test and potential impact.
--   **Executive**: Product Manager persona. High-level business value and stability summary (2-3 sentences).
-
-### Failover Pattern (Circuit Breaker)
-The backend implements a graceful degradation strategy. If the Gemini API is unavailable or returns an error (e.g., quota limits), the system returns pre-prepared mock data to ensure UI stability.
+## Integration Details
+-   **Jira**: Explicit field extraction (key, summary, priority, status) via bounded JQL queries.
+-   **GitHub**: Monitoring PR states, reviewer approvals, and the latest CI/CD workflow status.
 
 ## Development Workflows
--   **Starting Backend**: `source venv/bin/activate && uvicorn main:app --reload`
--   **Starting Frontend**: `cd frontend && npm run dev`
--   **Port Mapping**: Backend runs on `8000`, Frontend runs on `5173`.
+-   **Starting Backend**: `python3 main.py` (Server runs on port 8000)
+-   **Frontend Watcher**: `cd frontend && npm run build -- --watch` (Auto-rebuilds UI on save)
+-   **Public Sharing**: `ngrok http 8000 --domain=YOUR_DOMAIN`
 
-## Architecture Note
-This is a Decoupled Full-Stack Architecture. The frontend and backend are standalone services communicating via RESTful JSON APIs. CORS is enabled on the backend to allow requests from the frontend origin.
-bin/activate && uvicorn main:app --reload`
--   **Starting Frontend**: `cd frontend && npm run dev`
--   **Port Mapping**: Backend runs on `8000`, Frontend runs on `5173`.
-
-## Architecture Note
-This is a Decoupled Full-Stack Architecture. The frontend and backend are standalone services communicating via RESTful JSON APIs. CORS is enabled on the backend to allow requests from the frontend origin.
+## AI Integration Strategy
+The Gemini AI acts as the **Contextual Translator**, rewriting raw engineering data for Technical, QA, and Executive personas to ensure high-quality release communications across all stakeholders.
