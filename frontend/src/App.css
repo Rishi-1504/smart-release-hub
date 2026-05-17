@@ -2,28 +2,28 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 :root {
-  --brand-primary: #000000;
+  --brand-primary: #FF6B00; /* HIGH-VOLTAGE ORANGE */
   --font-main: 'Inter', sans-serif;
   --bg-color: #f2f2f2;
 }
 
 /* 
    WORLD-CLASS AVANT-GARDE BASE 
-   Neo-Brutalist Cyber-Industrial
+   High-Voltage Industrial Edition
 */
 
 * {
-  cursor: none !important; /* HIDE SYSTEM MOUSE */
+  cursor: none !important;
 }
 
 body {
   margin: 0;
   font-family: var(--font-main);
-  @apply transition-colors duration-300 bg-[#f2f2f2] text-black overflow-x-hidden selection:bg-black selection:text-white;
+  @apply transition-colors duration-300 bg-[#f2f2f2] text-black overflow-x-hidden selection:bg-[#FF6B00] selection:text-white;
 }
 
 .dark body {
-  @apply bg-[#000000] text-white selection:bg-white selection:text-black;
+  @apply bg-[#050505] text-[#FF6B00] selection:bg-white selection:text-black;
 }
 
 /* 
@@ -42,78 +42,34 @@ body {
 
 .scanline {
   width: 100%;
-  height: 2px;
-  background: rgba(0, 0, 0, 0.05);
-  opacity: 0.1;
+  height: 4px;
+  background: linear-gradient(to bottom, transparent, rgba(255, 107, 0, 0.05), transparent);
   position: absolute;
-  animation: scanline 8s linear infinite;
-}
-
-.dark .scanline {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-@keyframes scanline {
-  0% { top: 0%; }
-  100% { top: 100%; }
+  animation: scanline 10s linear infinite;
 }
 
 .noise {
   position: fixed;
-  top: -50%;
-  left: -50%;
-  right: -50%;
-  bottom: -50%;
-  width: 200%;
-  height: 200%;
+  top: -50%; left: -50%; width: 200%; height: 200%;
   background: transparent url('http://assets.iceable.com/img/noise.png') repeat;
-  background-repeat: repeat;
   animation: noise 0.2s infinite;
-  opacity: .04;
-  visibility: visible;
+  opacity: .05;
   z-index: 9998;
 }
 
-@keyframes noise {
-  0% { transform: translate(0,0) }
-  10% { transform: translate(-5%,-5%) }
-  20% { transform: translate(-10%,5%) }
-  30% { transform: translate(5%,-10%) }
-  40% { transform: translate(-5%,15%) }
-  50% { transform: translate(-10%,5%) }
-  60% { transform: translate(15%,0) }
-  70% { transform: translate(0,10%) }
-  80% { transform: translate(-15%,0) }
-  90% { transform: translate(10%,5%) }
-  100% { transform: translate(5%,0) }
-}
+@keyframes scanline { 0% { top: 0%; } 100% { top: 100%; } }
+@keyframes noise { 0% { transform: translate(0,0) } 100% { transform: translate(5%,5%) } }
 
 /* 
-   BRUTALIST ARCHITECTURE 
+   BRUTALIST ARCHITECTURE (HIGH-VOLTAGE)
 */
 
 .premium-card {
-  @apply bg-white dark:bg-black border-[3px] border-black dark:border-white rounded-none shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] dark:shadow-[12px_12px_0px_0px_rgba(255,255,255,1)] transition-all duration-200 relative overflow-hidden;
+  @apply bg-white dark:bg-[#0a0a0a] border-[4px] border-black dark:border-[#FF6B00] rounded-none shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] dark:shadow-[16px_16px_0px_0px_rgba(255,107,0,0.3)] transition-all duration-200 relative overflow-hidden;
 }
 
-.premium-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
-  transition: 0.5s;
-}
-
-.premium-card:hover::before {
-  left: 100%;
+.premium-card:hover {
+  @apply translate-x-[-4px] translate-y-[-4px] shadow-[20px_20px_0px_0px_rgba(0,0,0,1)] dark:shadow-[20px_20px_0px_0px_rgba(255,107,0,0.5)];
 }
 
 /* 
@@ -121,26 +77,15 @@ body {
 */
 
 .text-massive {
-  @apply font-black uppercase tracking-tighter leading-[0.8];
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.05em;
+  line-height: 0.8;
   font-size: clamp(4rem, 15vw, 12rem);
 }
 
-.marquee-container {
-  @apply border-y-4 border-black dark:border-white py-4 bg-black text-white dark:bg-white dark:text-black overflow-hidden whitespace-nowrap flex;
-}
-
-.marquee-content {
-  display: flex;
-  animation: marquee 20s linear infinite;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 1.5rem;
-}
-
-@keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+.dark .text-massive {
+  color: #FF6B00;
 }
 
 /* 
@@ -150,83 +95,65 @@ body {
 .markdown-content {
   @apply leading-[1.2] text-black dark:text-white font-bold;
   font-size: 1.25rem;
-  letter-spacing: -0.02em;
 }
 
 .markdown-content h1 { 
-  @apply text-massive mb-12 border-b-[12px] border-black dark:border-white pb-4;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.05em;
+  line-height: 0.8;
+  font-size: clamp(4rem, 15vw, 12rem);
+  @apply mb-12 border-b-[12px] border-black dark:border-[#FF6B00] pb-4;
 }
 
 .markdown-content h2 { 
-  @apply text-5xl font-black uppercase tracking-tighter mt-16 mb-8 border-l-[16px] border-black dark:border-white pl-8;
+  @apply text-5xl font-black uppercase mt-16 mb-8 border-l-[16px] border-[#FF6B00] pl-8 text-black dark:text-[#FF6B00];
 }
 
 .markdown-content h3 {
-  @apply text-2xl font-black uppercase tracking-widest mt-12 mb-4 bg-black text-white dark:bg-white dark:text-black inline-block px-4 py-1;
-}
-
-.markdown-content p {
-  @apply mb-8 opacity-90;
+  @apply text-2xl font-black uppercase mt-12 mb-4 bg-[#FF6B00] text-black inline-block px-4 py-1;
 }
 
 .markdown-content strong {
-  @apply font-black underline decoration-[6px] decoration-indigo-600 dark:decoration-indigo-400 underline-offset-4;
+  @apply font-black underline decoration-[8px] decoration-[#FF6B00] underline-offset-4;
 }
 
 .markdown-content code {
-  @apply bg-black dark:bg-white text-white dark:text-black px-3 py-1 font-black font-mono text-[0.8em] shadow-[4px_4px_0px_0px_rgba(99,102,241,1)];
+  @apply bg-black dark:bg-[#FF6B00] text-white dark:text-black px-3 py-1 font-black font-mono shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.2)];
 }
 
 .markdown-content pre {
-  @apply bg-white dark:bg-black p-10 border-[6px] border-black dark:border-white shadow-[20px_20px_0px_0px_rgba(0,0,0,1)] dark:shadow-[20px_20px_0px_0px_rgba(255,255,255,1)] my-16 relative overflow-visible;
-}
-
-.markdown-content pre::before {
-  content: "ENCRYPTED DATA STREAM";
-  @apply absolute -top-8 left-0 text-[10px] font-black tracking-[0.5em] text-black/40 dark:text-white/40;
+  @apply bg-black text-[#FF6B00] p-10 border-[6px] border-[#FF6B00] shadow-[24px_24px_0px_0px_rgba(0,0,0,1)] my-16 relative;
 }
 
 .markdown-content blockquote {
-  @apply border-l-[24px] border-black dark:border-white bg-black/5 dark:bg-white/5 px-12 py-10 my-16 italic text-4xl font-black tracking-tighter leading-none;
-}
-
-.markdown-content ul {
-  @apply space-y-4 mb-12;
-}
-
-.markdown-content li {
-  @apply flex items-start gap-4 border-b-2 border-black/10 dark:border-white/10 pb-4;
-}
-
-.markdown-content li::before {
-  content: ">>";
-  @apply font-black text-indigo-600 dark:text-indigo-400;
+  @apply border-l-[32px] border-[#FF6B00] bg-[#FF6B00]/10 px-12 py-10 my-16 italic text-4xl font-black tracking-tighter leading-none text-black dark:text-[#FF6B00];
 }
 
 /* 
-   LED INDICATORS (STARK)
+   LED INDICATORS (WARNING YELLOW)
 */
 
 @keyframes led-blink {
-  0% { background-color: #10b981; box-shadow: 0 0 20px rgba(16,185,129,1); }
-  50% { background-color: #064e3b; box-shadow: none; opacity: 0.4; }
-  100% { background-color: #10b981; box-shadow: 0 0 20px rgba(16,185,129,1); }
+  0% { background-color: #FFD600; box-shadow: 0 0 30px rgba(255,214,0,1); }
+  50% { background-color: #453b00; box-shadow: none; opacity: 0.4; }
+  100% { background-color: #FFD600; box-shadow: 0 0 30px rgba(255,214,0,1); }
 }
 
 .animate-led {
-  animation: led-blink 1s steps(2, start) infinite;
+  animation: led-blink 0.8s steps(2, start) infinite;
 }
 
 /* 
-   CUSTOM SCROLLBAR (BRUTAL)
+   CUSTOM SCROLLBAR (INDUSTRIAL)
 */
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 16px;
+  width: 20px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
-  @apply bg-black dark:bg-white;
+  @apply bg-black border-l-4 border-[#FF6B00];
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-[#f2f2f2] dark:bg-black border-4 border-black dark:border-white;
+  @apply bg-[#FF6B00] border-4 border-black;
 }

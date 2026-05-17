@@ -28,10 +28,10 @@ const NavigationOverlay = ({ isOpen, setIsOpen, activeView, setActiveView }) => 
     <>
       {/* Floating Trigger Button */}
       <motion.button
-        whileHover={{ scale: 1.1 }}
+        whileHover={{ scale: 1.1, backgroundColor: '#FF6B00', color: '#000' }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(true)}
-        className="fixed top-8 right-8 z-[9995] bg-black dark:bg-white text-white dark:text-black p-6 border-4 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] flex items-center gap-4 font-black uppercase tracking-[0.2em] text-sm"
+        className="fixed top-8 right-8 z-[9995] bg-black dark:bg-[#FF6B00] text-white dark:text-black p-6 border-4 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,107,0,0.4)] flex items-center gap-4 font-black uppercase tracking-[0.2em] text-sm"
       >
         <Menu size={24} strokeWidth={3} />
         COMMAND
@@ -44,14 +44,14 @@ const NavigationOverlay = ({ isOpen, setIsOpen, activeView, setActiveView }) => 
             animate="visible"
             exit="hidden"
             variants={variants}
-            className="fixed inset-0 z-[9998] bg-[#f2f2f2] dark:bg-black p-20 flex flex-col justify-center"
+            className="fixed inset-0 z-[9998] bg-[#050505] p-20 flex flex-col justify-center border-[20px] border-[#FF6B00]"
           >
             {/* Close Button */}
             <button
               onClick={() => setIsOpen(false)}
-              className="absolute top-12 right-12 text-black dark:text-white hover:rotate-90 transition-transform p-4"
+              className="absolute top-12 right-12 text-[#FF6B00] hover:rotate-90 transition-transform p-4"
             >
-              <X size={64} strokeWidth={3} />
+              <X size={64} strokeWidth={4} />
             </button>
 
             {/* Huge Menu Links */}
@@ -67,8 +67,8 @@ const NavigationOverlay = ({ isOpen, setIsOpen, activeView, setActiveView }) => 
                   }}
                   className={`group flex items-baseline gap-8 text-left transition-colors ${
                     activeView === item.id 
-                      ? 'text-indigo-600 dark:text-white' 
-                      : 'text-black/20 dark:text-white/20 hover:text-black dark:hover:text-white'
+                      ? 'text-[#FF6B00]' 
+                      : 'text-[#FF6B00]/20 hover:text-[#FF6B00]'
                   }`}
                 >
                   <span className="text-xl font-black font-mono opacity-40">0{i+1}</span>
