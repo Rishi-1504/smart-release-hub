@@ -17,16 +17,26 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [activeView, setActiveView] = useState('dashboard');
   const [lastSynced, setLastSynced] = useState(new Date().toLocaleTimeString());
+  const [nextSyncIn, setNextSyncIn] = useState(30);
 
   useEffect(() => {
     fetchReadiness();
 
     // AUTO-SYNC HEARTBEAT: Poll every 30 seconds
-    const interval = setInterval(() => {
+    const pollInterval = setInterval(() => {
       fetchReadiness();
+      setNextSyncIn(30); // Reset countdown on sync
     }, 30000);
 
-    return () => clearInterval(interval); // Cleanup on unmount
+    // COUNTDOWN TIMER: Tick every 1 second
+    const tickInterval = setInterval(() => {
+      setNextSyncIn(prev => (prev > 0 ? prev - 1 : 30));
+    }, 1000);
+
+    return () => {
+      clearInterval(pollInterval);
+      clearInterval(tickInterval);
+    };
   }, []);
 
   useEffect(() => {
@@ -153,9 +163,12 @@ function App() {
         
         <div className="flex items-center gap-4 px-6 py-3 border-4 border-black dark:border-white bg-white dark:bg-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
           <div className={`h-4 w-4 border-2 border-black dark:border-white ${readiness.status === 'error' ? 'animate-led-error' : 'animate-led'}`} />
-          <div className="flex flex-col">
+          <div className="flex flex-col min-w-[80px]">
             <span className="text-[10px] font-black text-black dark:text-white uppercase tracking-[0.2em] leading-none mb-1">Neural Sync</span>
-            <span className="text-[9px] font-bold text-black/50 dark:text-white/50 uppercase tracking-widest leading-none">Last: {lastSynced}</span>
+            <div className="flex justify-between items-center gap-2">
+              <span className="text-[8px] font-bold text-black/50 dark:text-white/50 uppercase tracking-widest leading-none">Last: {lastSynced.split(' ')[0]}</span>
+              <span className="text-[8px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest leading-none">Next: {nextSyncIn}s</span>
+            </div>
           </div>
         </div>
       </div>
