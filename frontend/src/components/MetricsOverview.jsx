@@ -1,8 +1,8 @@
-import React from 'react';
-import { ShieldCheck, AlertTriangle, Info, CheckCircle2, Circle } from 'lucide-react';
+import React, { memo } from 'react';
+import { ShieldCheck, AlertTriangle, Info, CheckCircle2 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
-const MetricsOverview = ({ readiness }) => {
+const MetricsOverview = memo(({ readiness }) => {
   const isGo = readiness.verdict === 'GO';
   
   const data = [
@@ -33,6 +33,7 @@ const MetricsOverview = ({ readiness }) => {
                   endAngle={450}
                   stroke={document.documentElement.classList.contains('dark') ? '#FFFFFF' : '#000000'}
                   strokeWidth={2}
+                  isAnimationActive={false}
                 >
                   <Cell fill={document.documentElement.classList.contains('dark') ? DARK_COLORS[0] : COLORS[0]} />
                   <Cell fill={document.documentElement.classList.contains('dark') ? DARK_COLORS[1] : COLORS[1]} />
@@ -97,6 +98,12 @@ const MetricsOverview = ({ readiness }) => {
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.readiness.score === nextProps.readiness.score &&
+    prevProps.readiness.verdict === nextProps.readiness.verdict &&
+    prevProps.readiness.details.length === nextProps.readiness.details.length
+  );
+});
 
 export default MetricsOverview;

@@ -266,7 +266,14 @@ async def generate_notes(request: GenerationRequest):
         )
         return {"variant": variant, "content": response.text}
     except Exception as e:
-        return {"variant": variant, "content": "AI synthesis error. Check logs.", "error": str(e)}
+        error_msg = str(e)
+        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+            return {
+                "variant": variant, 
+                "content": "### ⚠️ AI Quota Reached\n\nYou have exceeded the daily limit for the Gemini Free Tier. Please wait for the quota to reset (usually every 24 hours) or upgrade your plan in Google AI Studio.",
+                "error": "Quota Exceeded (429)"
+            }
+        return {"variant": variant, "content": "AI synthesis error. Check terminal logs.", "error": error_msg}
 
 # Serve Static Files (Frontend)
 # IMPORTANT: This must be mounted AFTER the /api routes
