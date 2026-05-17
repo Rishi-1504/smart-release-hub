@@ -1,16 +1,20 @@
 import React from 'react';
 
-const DashboardLayout = ({ sidebar, children }) => {
+const DashboardLayout = ({ children }) => {
   return (
-    <div className="flex min-h-screen transition-colors duration-300 overflow-hidden bg-[#f2f2f2] dark:bg-black font-sans">
-      {/* Sidebar Stays Fixed with Stark Border */}
-      <div className="fixed inset-y-0 left-0 z-50">
-        {sidebar}
+    <div className="min-h-screen transition-colors duration-300 overflow-x-hidden bg-[#f2f2f2] dark:bg-black font-sans relative">
+      {/* 
+         CYBER-INDUSTRIAL OVERLAYS 
+         Permanent visual texture for 'World No. 1' vibe
+      */}
+      <div className="cyber-overlay">
+        <div className="scanline" />
+        <div className="noise" />
       </div>
-      
-      {/* Main Content Area - No Gradients, Stark Layout */}
-      <main className="flex-1 ml-64 min-h-screen px-16 py-16 overflow-y-auto relative">
-        <div className="max-w-7xl mx-auto relative z-10">
+
+      {/* Main Content Area - Full width, centered layout */}
+      <main className="min-h-screen px-8 md:px-24 py-24 relative z-10">
+        <div className="max-w-[1600px] mx-auto">
           {children}
         </div>
       </main>

@@ -1,38 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { marked } from 'marked';
+import { motion, AnimatePresence } from 'framer-motion';
 import './App.css';
 
 // Components
-import Sidebar from './components/Sidebar';
 import DashboardLayout from './components/DashboardLayout';
 import MetricsOverview from './components/MetricsOverview';
 import AiGenerationPanel from './components/AiGenerationPanel';
+import NavigationOverlay from './components/NavigationOverlay';
+import CustomCursor from './components/CustomCursor';
 
 function App() {
   const [activeTab, setActiveTab] = useState('technical');
-  const [content, setContent] = useState('### System Ready\n\nSelect an operation persona above to initialize AI generation.');
+  const [content, setContent] = useState('### Neural Hub Ready\n\nAccess COMMAND to navigate.');
   const [readiness, setReadiness] = useState({ score: 0, verdict: 'INIT', details: [], status: 'initializing' });
   const [loading, setLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [activeView, setActiveView] = useState('dashboard');
+  const [isNavOpen, setIsNavOpen] = useState(false);
   const [lastSynced, setLastSynced] = useState(new Date().toLocaleTimeString());
   const [nextSyncIn, setNextSyncIn] = useState(30);
 
   useEffect(() => {
     fetchReadiness();
-
-    // AUTO-SYNC HEARTBEAT: Poll every 30 seconds
     const pollInterval = setInterval(() => {
       fetchReadiness();
-      setNextSyncIn(30); // Reset countdown on sync
+      setNextSyncIn(30);
     }, 30000);
-
-    // COUNTDOWN TIMER: Tick every 1 second
     const tickInterval = setInterval(() => {
       setNextSyncIn(prev => (prev > 0 ? prev - 1 : 30));
     }, 1000);
-
     return () => {
       clearInterval(pollInterval);
       clearInterval(tickInterval);
@@ -48,7 +46,6 @@ function App() {
   }, [darkMode]);
 
   const fetchReadiness = async () => {
-    console.log("DEBUG: Auto-Syncing Data...");
     setReadiness(prev => ({ ...prev, status: 'updating' }));
     try {
       const url = `/api/readiness?t=${Date.now()}`;
@@ -80,18 +77,30 @@ function App() {
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
       setContent(response.data.content);
-      fetchReadiness(); // Refresh score after generation
+      fetchReadiness();
     } catch (error) {
-      setContent('**System Error:** Communication link with backend severed. Verify API state.');
+      setContent('**System Error:** Communication link with backend severed.');
     } finally {
       setLoading(false);
     }
   };
 
+  const pageVariants = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.33, 1, 0.68, 1] } },
+    exit: { opacity: 0, y: -20, transition: { duration: 0.4 } }
+  };
+
   const renderContent = () => {
-    switch(activeView) {
-      case 'dashboard':
-        return (
+    return (
+      <motion.div
+        key={activeView}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        variants={pageVariants}
+      >
+        {activeView === 'dashboard' && (
           <>
             <MetricsOverview readiness={readiness} />
             <AiGenerationPanel 
@@ -102,9 +111,8 @@ function App() {
               getMarkdownText={getMarkdownText}
             />
           </>
-        );
-      case 'notes':
-        return (
+        )}
+        {activeView === 'notes' && (
           <AiGenerationPanel 
             activeTab={activeTab}
             fetchNotes={fetchNotes}
@@ -112,78 +120,84 @@ function App() {
             loading={loading}
             getMarkdownText={getMarkdownText}
           />
-        );
-      case 'readiness':
-        return <MetricsOverview readiness={readiness} />;
-      case 'settings':
-        return (
+        )}
+        {activeView === 'readiness' && <MetricsOverview readiness={readiness} />}
+        {activeView === 'settings' && (
           <div className="premium-card p-12">
-            <h2 className="text-4xl font-black text-black dark:text-white mb-8 uppercase tracking-tighter">System Settings</h2>
-            
+            <h2 className="text-4xl font-black mb-8 uppercase tracking-tighter">System Settings</h2>
             <div className="space-y-8">
-              <div className="pt-6 border-t-4 border-black dark:border-white">
-                <p className="text-xs font-black uppercase tracking-widest text-black/40 dark:text-white/40 mb-4">Integrations Status</p>
+              <button 
+                onClick={() => setDarkMode(!darkMode)}
+                className="bg-black text-white dark:bg-white dark:text-black px-12 py-6 border-4 border-black dark:border-white font-black uppercase tracking-widest text-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[-2px] hover:translate-y-[-2px]"
+              >
+                TOGGLE {darkMode ? 'LIGHT' : 'DARK'} MODE
+              </button>
+              <div className="pt-10 border-t-4 border-black dark:border-white">
+                <p className="text-xs font-black uppercase tracking-widest opacity-40 mb-4">Neural Architecture Status</p>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 border-2 border-black dark:border-white font-black text-[10px] uppercase bg-[#f2f2f2] dark:bg-black">Jira: Connected</div>
-                  <div className="p-4 border-2 border-black dark:border-white font-black text-[10px] uppercase bg-[#f2f2f2] dark:bg-black">GitHub: Connected</div>
+                  <div className="p-6 border-4 border-black dark:border-white font-black text-xs uppercase bg-white dark:bg-black">JIRA: SYNCED</div>
+                  <div className="p-6 border-4 border-black dark:border-white font-black text-xs uppercase bg-white dark:bg-black">GITHUB: SYNCED</div>
                 </div>
               </div>
-              <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest italic">
-                * Single-Origin Deployment Active. Neural link is automatic.
-              </p>
             </div>
           </div>
-        );
-      default:
-        return null;
-    }
+        )}
+      </motion.div>
+    );
   };
 
   return (
-    <DashboardLayout 
-      sidebar={
-        <Sidebar 
-          darkMode={darkMode} 
-          setDarkMode={setDarkMode} 
-          activeView={activeView} 
-          setActiveView={setActiveView} 
-        />
-      }
-    >
-      {/* Header Area - Brutalist Style */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-16 border-b-8 border-black dark:border-white pb-10">
-        <div>
-          <h1 className="text-6xl font-black text-black dark:text-white tracking-tighter uppercase mb-4">
-            {activeView === 'notes' ? 'Release Notes' : activeView}
-          </h1>
-          <p className="text-xl font-bold text-black dark:text-white uppercase tracking-tight opacity-60">
-            Neural Intelligence for Software Operations
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-4 px-6 py-3 border-4 border-black dark:border-white bg-white dark:bg-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
-          <div className={`h-4 w-4 border-2 border-black dark:border-white ${readiness.status === 'error' ? 'animate-led-error' : 'animate-led'}`} />
-          <div className="flex flex-col min-w-[80px]">
-            <span className="text-[10px] font-black text-black dark:text-white uppercase tracking-[0.2em] leading-none mb-1">Neural Sync</span>
-            <div className="flex justify-between items-center gap-2">
-              <span className="text-[8px] font-bold text-black/50 dark:text-white/50 uppercase tracking-widest leading-none">Last: {lastSynced.split(' ')[0]}</span>
-              <span className="text-[8px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest leading-none">Next: {nextSyncIn}s</span>
+    <>
+      <CustomCursor />
+      <NavigationOverlay 
+        isOpen={isNavOpen} 
+        setIsOpen={setIsNavOpen} 
+        activeView={activeView} 
+        setActiveView={setActiveView} 
+      />
+      
+      <DashboardLayout>
+        {/* Header Area - Avant Garde */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20">
+          <div>
+            <motion.h1 
+              className="text-massive mb-4"
+              initial={{ x: -100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+            >
+              {activeView}
+            </motion.h1>
+            <p className="text-2xl font-black uppercase tracking-tighter opacity-40">
+              Neural Intel Hub // Operations Terminal
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-6 p-8 border-8 border-black dark:border-white bg-white dark:bg-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] dark:shadow-[12px_12px_0px_0px_rgba(255,255,255,1)]">
+            <div className={`h-8 w-8 border-4 border-black dark:border-white ${readiness.status === 'error' ? 'animate-led-error' : 'animate-led'}`} />
+            <div className="flex flex-col">
+              <span className="text-xl font-black uppercase tracking-[0.2em] leading-none mb-2">Neural Sync</span>
+              <div className="flex gap-4">
+                <span className="text-xs font-bold opacity-50 uppercase tracking-widest">Last: {lastSynced.split(' ')[0]}</span>
+                <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Next: {nextSyncIn}s</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Dynamic Content Section */}
-      {renderContent()}
+        <AnimatePresence mode="wait">
+          {renderContent()}
+        </AnimatePresence>
 
-      <footer className="mt-20 py-10 border-t-8 border-black dark:border-white flex flex-col md:flex-row justify-between items-center gap-6">
-        <span className="text-sm font-black text-black dark:text-white uppercase tracking-[0.3em]">Smart Release Intelligence Hub // 2026</span>
-        <div className="flex items-center gap-6">
-          <span className="text-xs font-black text-black dark:text-white uppercase px-4 py-2 border-2 border-black dark:border-white">Build v2.0.5-AUTO</span>
-          <span className="text-xs font-black text-black dark:text-white uppercase px-4 py-2 bg-black text-white dark:bg-white dark:text-black">Stable Link</span>
-        </div>
-      </footer>
-    </DashboardLayout>
+        <footer className="mt-32 py-16 border-t-[10px] border-black dark:border-white flex flex-col md:flex-row justify-between items-center gap-12">
+          <span className="text-xl font-black uppercase tracking-[0.4em]">NEURAL INTELLIGENCE HUB // © 2026</span>
+          <div className="flex gap-8">
+            <span className="text-sm font-black uppercase px-8 py-4 border-4 border-black dark:border-white">Build v3.0.0-EXPERIMENTAL</span>
+            <span className="text-sm font-black uppercase px-8 py-4 bg-black text-white dark:bg-white dark:text-black">Stable Neural Link</span>
+          </div>
+        </footer>
+      </DashboardLayout>
+    </>
   );
 }
 
