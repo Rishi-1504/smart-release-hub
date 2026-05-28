@@ -1,8 +1,11 @@
 import os
 import httpx
 import base64
+import sqlite3
+import json
+from datetime import datetime
 from google import genai
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +16,47 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = FastAPI()
+
+# Database Setup
+DB_PATH = "release_hub.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS release_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            score INTEGER,
+            verdict TEXT,
+            details TEXT,
+            raw_data TEXT
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    ''')
+    # Default weights
+    default_settings = {
+        "weight_blocker": 15,
+        "weight_untested": 10,
+        "cap_untested": 40,
+        "weight_failed_build": 25,
+        "weight_unmerged_pr": 5,
+        "cap_unmerged_pr": 30,
+        "weight_pending_approval": 10,
+        "cap_pending_approval": 40,
+        "target_score": 70
+    }
+    for k, v in default_settings.items():
+        cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (k, str(v)))
+    conn.commit()
+    conn.close()
+
+init_db()
 
 # Configure CORS
 app.add_middleware(
@@ -37,6 +81,46 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 class GenerationRequest(BaseModel):
     variant: str
     raw_data: str = ""
+
+# Helper to get settings
+def get_config():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT key, value FROM settings")
+    settings = {row[0]: float(row[1]) if '.' in row[1] else int(row[1]) for row in cursor.fetchall()}
+    conn.close()
+    return settings
+
+@app.get("/api/settings")
+async def get_settings():
+    return get_config()
+
+@app.post("/api/settings")
+async def update_settings(new_settings: dict = Body(...)):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    for k, v in new_settings.items():
+        cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (k, str(v)))
+    conn.commit()
+    conn.close()
+    return {"status": "updated"}
+
+@app.get("/api/history")
+async def get_history():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, timestamp, score, verdict, details FROM release_history ORDER BY id DESC LIMIT 20")
+    history = []
+    for row in cursor.fetchall():
+        history.append({
+            "id": row[0],
+            "timestamp": row[1],
+            "score": row[2],
+            "verdict": row[3],
+            "details": json.loads(row[4])
+        })
+    conn.close()
+    return history
 
 @app.get("/api/debug/jira-me")
 async def debug_jira_me():
@@ -173,62 +257,72 @@ async def fetch_github_data():
     return {"prs": [], "build_status": "unknown"}
 
 @app.get("/api/readiness")
-async def get_readiness():
+async def get_readiness(save: bool = False):
+    config = get_config()
     jira_issues = await fetch_jira_tickets()
     github_data = await fetch_github_data()
     
     score = 100
     details = []
     
-    # 1. Jira Scoring: Open Blockers (-15 each) - UNCAPPED
-    # These are critical; if you have enough of them, the score should rightfully hit 0.
+    # 1. Jira Scoring: Open Blockers
     blockers = [i for i in jira_issues if i["priority"] in ["Highest", "High"] and i["status"] != "Done"]
-    blocker_deduction = len(blockers) * 15
+    blocker_deduction = len(blockers) * config["weight_blocker"]
     score -= blocker_deduction
     if blockers:
         details.append(f"Found {len(blockers)} high-priority open issues (Blockers). (-{blocker_deduction} pts)")
         
-    # 2. Jira Scoring: Untested Tickets (-10 each) - CAPPED at 40
-    # Prevents minor/normal tickets from tanking a release entirely on their own.
+    # 2. Jira Scoring: Untested Tickets
     untested = [i for i in jira_issues if i["status"] != "Done" and i not in blockers]
-    untested_deduction = min(len(untested) * 10, 40)
+    untested_deduction = min(len(untested) * config["weight_untested"], config["cap_untested"])
     score -= untested_deduction
     if untested:
-        cap_note = " (Cap reached)" if len(untested) * 10 > 40 else ""
+        cap_note = " (Cap reached)" if len(untested) * config["weight_untested"] > config["cap_untested"] else ""
         details.append(f"Found {len(untested)} untested/incomplete tickets.{cap_note} (-{untested_deduction} pts)")
 
-    # 3. GitHub Scoring: Failed Builds (-25) - FIXED DEDUCTION
+    # 3. GitHub Scoring: Failed Builds
     if github_data["build_status"] not in ["success", "in_progress", "no_builds"]:
-        score -= 25
-        details.append(f"Last GitHub Action build failed ({github_data['build_status']}). (-25 pts)")
+        score -= config["weight_failed_build"]
+        details.append(f"Last GitHub Action build failed ({github_data['build_status']}). (-{config['weight_failed_build']} pts)")
         
-    # 4. GitHub Scoring: Unmerged PRs (-5 each) - CAPPED at 30
+    # 4. GitHub Scoring: Unmerged PRs
     unmerged_prs = [pr for pr in github_data["prs"] if pr["state"] == "open"]
-    pr_deduction = min(len(unmerged_prs) * 5, 30)
+    pr_deduction = min(len(unmerged_prs) * config["weight_unmerged_pr"], config["cap_unmerged_pr"])
     score -= pr_deduction
     if unmerged_prs:
-        cap_note = " (Cap reached)" if len(unmerged_prs) * 5 > 30 else ""
+        cap_note = " (Cap reached)" if len(unmerged_prs) * config["weight_unmerged_pr"] > config["cap_unmerged_pr"] else ""
         details.append(f"Found {len(unmerged_prs)} unmerged Pull Requests.{cap_note} (-{pr_deduction} pts)")
 
-    # 5. GitHub Scoring: Pending Approvals (-10 each) - CAPPED at 40
-    # PRs that are open but have 0 approvals.
+    # 5. GitHub Scoring: Pending Approvals
     pending_approvals = [pr for pr in unmerged_prs if pr.get("approvals", 0) == 0]
-    approval_deduction = min(len(pending_approvals) * 10, 40)
+    approval_deduction = min(len(pending_approvals) * config["weight_pending_approval"], config["cap_pending_approval"])
     score -= approval_deduction
     if pending_approvals:
-        cap_note = " (Cap reached)" if len(pending_approvals) * 10 > 40 else ""
+        cap_note = " (Cap reached)" if len(pending_approvals) * config["weight_pending_approval"] > config["cap_pending_approval"] else ""
         details.append(f"Found {len(pending_approvals)} PRs pending approval.{cap_note} (-{approval_deduction} pts)")
 
     score = max(0, score)
-    verdict = "GO" if score >= 70 else "NO-GO"
+    verdict = "GO" if score >= config["target_score"] else "NO-GO"
     
-    return {
+    result = {
         "score": score,
         "verdict": verdict,
         "details": details,
         "raw_jira": jira_issues,
         "raw_github": github_data
     }
+
+    if save:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO release_history (timestamp, score, verdict, details, raw_data) VALUES (?, ?, ?, ?, ?)",
+            (datetime.now().isoformat(), score, verdict, json.dumps(details), json.dumps(result))
+        )
+        conn.commit()
+        conn.close()
+
+    return result
 
 @app.post("/api/generate-notes")
 async def generate_notes(request: GenerationRequest):
@@ -276,21 +370,27 @@ async def generate_notes(request: GenerationRequest):
         return {"variant": variant, "content": "AI synthesis error. Check terminal logs.", "error": error_msg}
 
 # Serve Static Files (Frontend)
-# IMPORTANT: This must be mounted AFTER the /api routes
-# Mount the compiled React assets (JS, CSS, images)
 app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+
+@app.get("/favicon.svg")
+async def get_favicon():
+    return FileResponse("frontend/dist/favicon.svg")
+
+@app.get("/icons.svg")
+async def get_icons():
+    return FileResponse("frontend/dist/icons.svg")
 
 @app.get("/{full_path:path}")
 async def serve_frontend(full_path: str):
-    # If the path starts with "api", it means the API route wasn't found (404)
     if full_path.startswith("api"):
         raise HTTPException(status_code=404, detail="API route not found")
     
-    # Otherwise, serve the frontend's index.html for any other URL
-    # This allows React Router (if added later) to handle the path
-    return FileResponse("frontend/dist/index.html")
+    # Serve index.html for everything else (React routing)
+    index_path = "frontend/dist/index.html"
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"error": "Frontend build not found. Please run 'npm run build' in the frontend directory."}
 
 if __name__ == "__main__":
     import uvicorn
-    # Enabled reload=True for automatic backend code sync
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

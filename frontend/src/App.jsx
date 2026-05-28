@@ -17,27 +17,13 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [activeView, setActiveView] = useState('dashboard');
   const [lastSynced, setLastSynced] = useState(new Date().toLocaleTimeString());
+  const [settings, setSettings] = useState({});
+  const [history, setHistory] = useState([]);
 
-  useEffect(() => {
-    fetchReadiness();
-    const pollInterval = setInterval(() => {
-      fetchReadiness();
-    }, 30000);
-    return () => clearInterval(pollInterval);
-  }, []);
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
-
-  const fetchReadiness = async () => {
+  const fetchReadiness = useCallback(async (save = false) => {
     setReadiness(prev => ({ ...prev, status: 'updating' }));
     try {
-      const url = `/api/readiness?t=${Date.now()}`;
+      const url = `/api/readiness?t=${Date.now()}${save ? '&save=true' : ''}`;
       const response = await axios.get(url, {
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
@@ -47,12 +33,72 @@ function App() {
       console.error("Readiness fetch failed:", error.message);
       setReadiness(prev => ({ ...prev, status: 'error' }));
     }
+  }, []);
+
+  const fetchSettings = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/settings');
+      setSettings(response.data);
+    } catch (e) { console.error(e); }
+  }, []);
+
+  const fetchHistory = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/history');
+      setHistory(response.data);
+    } catch (e) { console.error(e); }
+  }, []);
+
+  useEffect(() => {
+    fetchReadiness();
+    const pollInterval = setInterval(() => {
+      fetchReadiness();
+    }, 30000);
+    return () => clearInterval(pollInterval);
+  }, [fetchReadiness]);
+
+  useEffect(() => {
+    if (activeView === 'settings') {
+      fetchSettings();
+      fetchHistory();
+    }
+  }, [activeView, fetchSettings, fetchHistory]);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  const updateSetting = async (key, value) => {
+    try {
+      await axios.post('/api/settings', { [key]: value });
+      fetchSettings();
+    } catch (e) { console.error(e); }
   };
 
   const getMarkdownText = () => {
-    const processedContent = content.replace(/^(To|From|Subject|Date):.*$/gmi, '').trim();
-    const rawMarkup = marked.parse(processedContent);
-    return { __html: rawMarkup };
+    try {
+      if (typeof content !== 'string') return { __html: '' };
+      const processedContent = content.replace(/^(To|From|Subject|Date):.*$/gmi, '').trim();
+      
+      // Handle both ESM and older bundle styles for marked
+      let html = '';
+      if (marked && typeof marked.parse === 'function') {
+        html = marked.parse(processedContent);
+      } else if (typeof marked === 'function') {
+        html = marked(processedContent);
+      } else {
+        html = processedContent;
+      }
+        
+      return { __html: html };
+    } catch (err) {
+      console.error("Markdown parsing failed:", err);
+      return { __html: '<p>Error parsing content.</p>' };
+    }
   };
 
   const fetchNotes = async (type) => {
@@ -91,10 +137,10 @@ function App() {
           </div>
           {activeView === 'dashboard' && (
             <button 
-              onClick={fetchReadiness}
+              onClick={() => fetchReadiness(true)}
               className="sn-button-secondary text-xs"
             >
-              Refresh Data
+              Sync & Record Audit
             </button>
           )}
         </header>
@@ -130,30 +176,53 @@ function App() {
             )}
             {activeView === 'readiness' && <MetricsOverview readiness={readiness} />}
             {activeView === 'settings' && (
-              <div className="sn-card">
-                <div className="sn-card-header">System Preferences</div>
-                <div className="sn-card-body space-y-6">
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">Display Theme</label>
-                    <button 
-                      onClick={() => setDarkMode(!darkMode)}
-                      className="sn-button"
-                    >
-                      Set to {darkMode ? 'Light' : 'Dark'} Mode
-                    </button>
-                  </div>
-                  <div className="pt-6 border-t border-gray-100">
-                    <label className="block text-sm font-semibold mb-4">Integration Status</label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="p-4 border border-gray-200 rounded-sm bg-gray-50 flex items-center justify-between">
-                        <span className="text-xs font-bold text-gray-600">JIRA API</span>
-                        <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold uppercase">Connected</span>
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div className="sn-card">
+                  <div className="sn-card-header">Scoring Configuration</div>
+                  <div className="sn-card-body space-y-4">
+                    {Object.entries(settings).map(([key, value]) => (
+                      <div key={key} className="flex justify-between items-center border-b border-gray-50 pb-2">
+                        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{key.replace(/_/g, ' ')}</span>
+                        <input 
+                          type="number" 
+                          value={value} 
+                          onChange={(e) => updateSetting(key, e.target.value)}
+                          className="w-20 bg-gray-50 border border-gray-200 rounded px-2 py-1 text-xs text-right focus:outline-none focus:border-sn-link-color"
+                        />
                       </div>
-                      <div className="p-4 border border-gray-200 rounded-sm bg-gray-50 flex items-center justify-between">
-                        <span className="text-xs font-bold text-gray-600">GITHUB API</span>
-                        <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold uppercase">Connected</span>
-                      </div>
+                    ))}
+                    <div className="pt-4 flex justify-between items-center">
+                      <span className="text-sm font-bold">Theme Mode</span>
+                      <button 
+                        onClick={() => setDarkMode(!darkMode)}
+                        className="sn-button text-xs"
+                      >
+                        Switch to {darkMode ? 'Light' : 'Dark'}
+                      </button>
                     </div>
+                  </div>
+                </div>
+
+                <div className="sn-card">
+                  <div className="sn-card-header">Release Audit Log</div>
+                  <div className="sn-card-body max-h-[400px] overflow-y-auto">
+                    {history.length > 0 ? (
+                      <div className="space-y-2">
+                        {history.map((h) => (
+                          <div key={h.id} className="p-3 border border-gray-100 rounded-sm bg-gray-50 dark:bg-white/5 flex justify-between items-center">
+                            <div>
+                              <p className="text-[10px] font-bold text-gray-400">{new Date(h.timestamp).toLocaleString()}</p>
+                              <p className="text-xs font-semibold">Score: <span className={h.score >= (settings.target_score || 70) ? 'text-green-600' : 'text-red-600'}>{h.score}%</span></p>
+                            </div>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${h.verdict === 'GO' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                              {h.verdict}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-center py-10 text-xs text-gray-400 italic">No history recorded yet.</p>
+                    )}
                   </div>
                 </div>
               </div>

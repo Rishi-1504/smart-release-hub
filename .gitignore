@@ -164,3 +164,7 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Project specific
+release_hub.db
+release_hub.db-journal
