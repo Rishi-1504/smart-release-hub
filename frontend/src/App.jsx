@@ -19,6 +19,15 @@ function App() {
   const [lastSynced, setLastSynced] = useState(new Date().toLocaleTimeString());
   const [settings, setSettings] = useState({});
   const [history, setHistory] = useState([]);
+  const abortControllerRef = useRef(null);
+
+  const cancelNotes = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setLoading(false);
+      setContent(prev => prev + '\n\n**Generation Cancelled by User.**');
+    }
+  };
 
   const fetchReadiness = useCallback(async (save = false) => {
     setReadiness(prev => ({ ...prev, status: 'updating' }));
@@ -104,19 +113,29 @@ function App() {
   const fetchNotes = async (type) => {
     setActiveTab(type);
     setLoading(true);
+    
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
+
     try {
       const response = await axios.post(`/api/generate-notes`, {
         variant: type,
         raw_data: "" 
       }, {
-        headers: { 'ngrok-skip-browser-warning': 'true' }
+        headers: { 'ngrok-skip-browser-warning': 'true' },
+        signal: abortControllerRef.current.signal
       });
       setContent(response.data.content);
       fetchReadiness();
     } catch (error) {
-      setContent('**System Error:** Communication link with backend severed.');
+      if (axios.isCancel(error)) {
+        console.log('Request canceled', error.message);
+      } else {
+        setContent('**System Error:** Communication link with backend severed.');
+      }
     } finally {
       setLoading(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -159,6 +178,7 @@ function App() {
                 <AiGenerationPanel 
                   activeTab={activeTab}
                   fetchNotes={fetchNotes}
+                  cancelNotes={cancelNotes}
                   content={content}
                   loading={loading}
                   getMarkdownText={getMarkdownText}
@@ -169,6 +189,7 @@ function App() {
               <AiGenerationPanel 
                 activeTab={activeTab}
                 fetchNotes={fetchNotes}
+                cancelNotes={cancelNotes}
                 content={content}
                 loading={loading}
                 getMarkdownText={getMarkdownText}

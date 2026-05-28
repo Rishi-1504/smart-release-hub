@@ -1,7 +1,7 @@
 import React from 'react';
 import { Cpu, CheckCircle, BarChart3, Sparkles, Wand2 } from 'lucide-react';
 
-const AiGenerationPanel = ({ activeTab, fetchNotes, content, loading, getMarkdownText }) => {
+const AiGenerationPanel = ({ activeTab, fetchNotes, cancelNotes, content, loading, getMarkdownText }) => {
   const tabs = [
     { id: 'technical', label: 'Technical', icon: <Cpu size={14} /> },
     { id: 'qa', label: 'QA Summary', icon: <CheckCircle size={14} /> },
@@ -41,7 +41,18 @@ const AiGenerationPanel = ({ activeTab, fetchNotes, content, loading, getMarkdow
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
             <Sparkles size={12} className={loading ? 'animate-pulse text-sn-link-color' : ''} />
-            {loading ? 'Processing...' : 'Engine Ready'}
+            {loading ? (
+              <div className="flex items-center gap-3">
+                <span>Processing...</span>
+                <button 
+                  onClick={cancelNotes}
+                  className="bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded-sm hover:bg-red-100 transition-colors flex items-center gap-1"
+                >
+                  <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
+                  STOP
+                </button>
+              </div>
+            ) : 'Engine Ready'}
           </div>
           <div className="flex items-center gap-2 border-l border-sn-border-color pl-4">
             <button 
