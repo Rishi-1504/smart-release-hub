@@ -2,10 +2,10 @@ import React from 'react';
 import TopHeader from './TopHeader';
 import Sidebar from './Sidebar';
 
-const DashboardLayout = ({ children, darkMode, setDarkMode, activeView, setActiveView, lastSynced, status }) => {
+const DashboardLayout = ({ children, darkMode, setDarkMode, activeView, setActiveView, lastSynced, syncCountdown, status }) => {
   return (
     <div className={`min-h-screen ${darkMode ? 'dark' : ''}`}>
-      <TopHeader lastSynced={lastSynced} status={status} setActiveView={setActiveView} />
+      <TopHeader lastSynced={lastSynced} syncCountdown={syncCountdown} status={status} setActiveView={setActiveView} />
       <Sidebar 
         darkMode={darkMode} 
         setDarkMode={setDarkMode} 

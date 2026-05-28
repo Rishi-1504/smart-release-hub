@@ -144,13 +144,14 @@ button, a, .sn-nav-item, [role="button"] {
 /* Sync Indicator Widget */
 .sn-sync-widget {
   @apply flex items-center gap-3 text-[11px] font-bold tracking-tight px-3 py-1 bg-white/10 rounded-full;
+  color: #a5f3fc; /* Bright cyan for visibility */
 }
 
 .sn-led {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.2);
+  border: 2px solid rgba(255,255,255,0.3);
 }
 
 @keyframes sn-pulse {
@@ -163,48 +164,50 @@ button, a, .sn-nav-item, [role="button"] {
   animation: sn-pulse 1.5s infinite ease-in-out;
 }
 
-/* IMPROVED DARK MODE */
+/* PROFESSIONAL DARK MODE REDESIGN */
 .dark {
-  --sn-main-bg: #091e42; /* Deep Navy */
-  --sn-card-bg: #172b4d; /* Soft Navy */
-  --sn-text-main: #ebecf0; /* Soft White */
-  --sn-border-color: #253858;
-  --sn-header-bg: #0747a6;
+  --sn-main-bg: #0f172a; /* Slate 900 */
+  --sn-card-bg: #1e293b; /* Slate 800 */
+  --sn-text-main: #f8fafc; /* Slate 50 */
+  --sn-border-color: #334155; /* Slate 700 */
+  --sn-header-bg: #1e40af; /* Blue 800 */
+  --sn-sidebar-bg: #0f172a;
 }
 
 .dark .sn-card-header {
-  background-color: #091e42;
-  color: #c1c7d0;
+  background-color: #334155;
+  color: #cbd5e1;
 }
 
 .dark .markdown-content {
-  color: #ebecf0;
+  color: #f1f5f9;
 }
 
 .dark .sn-button-secondary {
-  background-color: #253858;
-  border-color: #42526e;
+  background-color: #334155;
+  border-color: #475569;
   color: white;
 }
 
 .dark .sn-button-secondary:hover {
-  background-color: #42526e;
+  background-color: #475569;
 }
 
 .dark input {
-  background-color: #091e42 !important;
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
   color: white !important;
 }
 
-/* Audit Log Table */
-.sn-table {
-  @apply w-full text-left text-sm border-collapse;
+.dark .sn-nav-item:hover {
+  background-color: #1e293b;
 }
 
-.sn-table th {
-  @apply p-3 border-b border-gray-100 dark:border-white/10 text-[10px] uppercase font-bold text-gray-400;
+.dark .sn-table th {
+  background-color: #0f172a;
+  border-color: #334155;
 }
 
-.sn-table td {
-  @apply p-4 border-b border-gray-50 dark:border-white/5 align-top;
+.dark .sn-table td {
+  border-color: #334155;
 }

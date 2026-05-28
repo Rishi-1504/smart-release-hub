@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { marked } from 'marked';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, CheckCircle2, Clock, Calendar, Shield, Activity } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Calendar, Shield, Activity, RefreshCw } from 'lucide-react';
 import './App.css';
 
 // Components
@@ -21,43 +21,49 @@ function App() {
   const [syncCountdown, setSyncCountdown] = useState(30);
   const [settings, setSettings] = useState({});
   const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [showSyncToast, setShowSyncToast] = useState(false);
-  const lastScoreRef = useRef(null); // To track score changes
+  
+  const lastStateHashRef = useRef(null); // Tracks if Jira/GitHub data actually changed
   const abortControllerRef = useRef(null);
 
   const fetchHistory = useCallback(async () => {
+    setHistoryLoading(true);
     try {
-      const response = await axios.get('/api/history');
+      const response = await axios.get(`/api/history?t=${Date.now()}`);
       setHistory(response.data);
     } catch (e) { console.error(e); }
+    finally { setHistoryLoading(false); }
   }, []);
 
   const fetchReadiness = useCallback(async (save = false) => {
     setReadiness(prev => ({ ...prev, status: 'updating' }));
     try {
-      // If manually triggered, we always save. If automatic, we save only on change.
       const url = `/api/readiness?t=${Date.now()}`;
       const response = await axios.get(url, {
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
       
       const newScore = response.data.score;
+      // Simple hash to detect ANY change in Jira/GitHub data
+      const currentStateHash = JSON.stringify(response.data.details) + newScore;
+      
       setReadiness({ ...response.data, status: 'live' });
       setLastSynced(new Date().toLocaleTimeString());
       setSyncCountdown(30);
 
-      // Save logic: Manual trigger OR score changed
-      if (save || (lastScoreRef.current !== null && lastScoreRef.current !== newScore)) {
+      // SAVE LOGIC: Manual trigger OR actual data change
+      if (save || (lastStateHashRef.current !== null && lastStateHashRef.current !== currentStateHash)) {
         await axios.get(`/api/readiness?save=true&t=${Date.now()}`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
-        fetchHistory(); // Update history list immediately
+        fetchHistory(); // Refresh the list immediately
         if (save) {
           setShowSyncToast(true);
           setTimeout(() => setShowSyncToast(false), 3000);
         }
       }
-      lastScoreRef.current = newScore;
+      lastStateHashRef.current = currentStateHash;
     } catch (error) {
       console.error("Readiness fetch failed:", error.message);
       setReadiness(prev => ({ ...prev, status: 'error' }));
@@ -66,26 +72,23 @@ function App() {
 
   const fetchSettings = useCallback(async () => {
     try {
-      const response = await axios.get('/api/settings');
+      const response = await axios.get(`/api/settings?t=${Date.now()}`);
       setSettings(response.data);
     } catch (e) { console.error(e); }
   }, []);
 
-  const cancelNotes = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      setLoading(false);
-      setContent(prev => prev + '\n\n**Generation Cancelled by User.**');
-    }
-  };
-
-  // Immediate fetch on mount + Sync Countdown logic
+  // Initialization: Fetch immediately on load
   useEffect(() => {
-    fetchReadiness(); // Fetch immediately on load
+    fetchReadiness();
+    fetchSettings();
+  }, [fetchReadiness, fetchSettings]);
+
+  // Sync Countdown Logic
+  useEffect(() => {
     const timer = setInterval(() => {
       setSyncCountdown(prev => {
         if (prev <= 1) {
-          fetchReadiness(); // Automatic sync (no save unless score changes)
+          fetchReadiness(); 
           return 30;
         }
         return prev - 1;
@@ -95,9 +98,9 @@ function App() {
   }, [fetchReadiness]);
 
   useEffect(() => {
-    if (activeView === 'settings') fetchSettings();
     if (activeView === 'history') fetchHistory();
-  }, [activeView, fetchSettings, fetchHistory]);
+    if (activeView === 'settings') fetchSettings();
+  }, [activeView, fetchHistory, fetchSettings]);
 
   useEffect(() => {
     if (darkMode) {
@@ -118,18 +121,18 @@ function App() {
     try {
       if (typeof content !== 'string') return { __html: '' };
       const processedContent = content.replace(/^(To|From|Subject|Date):.*$/gmi, '').trim();
-      let html = '';
-      if (marked && typeof marked.parse === 'function') {
-        html = marked.parse(processedContent);
-      } else if (typeof marked === 'function') {
-        html = marked(processedContent);
-      } else {
-        html = processedContent;
-      }
+      let html = marked && typeof marked.parse === 'function' ? marked.parse(processedContent) : processedContent;
       return { __html: html };
     } catch (err) {
-      console.error("Markdown parsing failed:", err);
       return { __html: '<p>Error parsing content.</p>' };
+    }
+  };
+
+  const cancelNotes = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setLoading(false);
+      setContent(prev => prev + '\n\n**Generation Cancelled by User.**');
     }
   };
 
@@ -168,7 +171,7 @@ function App() {
 
     return (
       <div className="py-2">
-        <header className="mb-8 flex justify-between items-end border-b border-gray-200 dark:border-white/10 pb-6">
+        <header className="mb-8 flex justify-between items-end border-b border-gray-200 dark:border-slate-700 pb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 dark:text-white tracking-tight">{viewTitle}</h1>
             <p className="text-sm text-gray-500 mt-1">Operational Control &gt; {viewTitle}</p>
@@ -237,7 +240,14 @@ function App() {
                     <Clock size={16} />
                     <span>Permanent Release History</span>
                   </div>
-                  <button onClick={fetchHistory} className="text-blue-500 hover:underline">Refresh Logs</button>
+                  <button 
+                    onClick={fetchHistory} 
+                    disabled={historyLoading}
+                    className="flex items-center gap-2 text-blue-500 hover:text-blue-600 font-bold transition-colors disabled:opacity-50"
+                  >
+                    <RefreshCw size={14} className={historyLoading ? 'animate-spin' : ''} />
+                    Refresh Logs
+                  </button>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="sn-table">
@@ -250,9 +260,9 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {history.map(h => (
-                        <tr key={h.id}>
-                          <td className="whitespace-nowrap font-mono text-gray-500">
+                      {history.length > 0 ? history.map(h => (
+                        <tr key={h.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+                          <td className="whitespace-nowrap font-mono text-gray-500 dark:text-slate-400">
                             <div className="flex items-center gap-2">
                               <Calendar size={12} />
                               {new Date(h.timestamp).toLocaleString()}
@@ -263,21 +273,25 @@ function App() {
                               {h.verdict}
                             </span>
                           </td>
-                          <td className="font-bold text-lg">
+                          <td className="font-bold text-lg dark:text-white">
                             {h.score}%
                           </td>
                           <td>
                             <ul className="space-y-1">
                               {h.details.map((d, i) => (
-                                <li key={i} className="text-[11px] text-gray-600 dark:text-gray-400 flex items-start gap-2">
-                                  <Shield size={10} className="mt-1 flex-shrink-0" />
+                                <li key={i} className="text-[11px] text-gray-600 dark:text-slate-300 flex items-start gap-2">
+                                  <Shield size={10} className="mt-1 text-blue-500 flex-shrink-0" />
                                   {d}
                                 </li>
                               ))}
                             </ul>
                           </td>
                         </tr>
-                      ))}
+                      )) : (
+                        <tr>
+                          <td colSpan="4" className="text-center py-20 text-gray-400 italic">No change history recorded yet.</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -295,16 +309,16 @@ function App() {
                   </div>
                   <div className="sn-card-body space-y-4">
                     {Object.entries(settings).map(([key, value]) => (
-                      <div key={key} className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-white/5 last:border-0">
+                      <div key={key} className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-slate-700 last:border-0">
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">{key.replace(/_/g, ' ')}</span>
+                          <span className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wide">{key.replace(/_/g, ' ')}</span>
                           <span className="text-[10px] text-gray-400">Impact on the final readiness score</span>
                         </div>
                         <input 
                           type="number" 
                           value={value} 
                           onChange={(e) => updateSetting(key, e.target.value)}
-                          className="w-24 bg-gray-50 dark:bg-[#091e42] border border-gray-200 dark:border-white/10 rounded px-3 py-2 text-sm text-right font-mono"
+                          className="w-24 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded px-3 py-2 text-sm text-right font-mono dark:text-white"
                         />
                       </div>
                     ))}
@@ -315,12 +329,12 @@ function App() {
                   <div className="sn-card-header">Display Preferences</div>
                   <div className="sn-card-body flex justify-between items-center">
                     <div>
-                      <p className="font-bold">Dark Mode</p>
-                      <p className="text-xs text-gray-500">Enable high-contrast dark interface</p>
+                      <p className="font-bold dark:text-white">Dark Mode</p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400">Enable high-contrast slate interface</p>
                     </div>
                     <button 
                       onClick={() => setDarkMode(!darkMode)}
-                      className="sn-button-secondary"
+                      className="sn-button-secondary dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                     >
                       {darkMode ? 'Switch to Light' : 'Switch to Dark'}
                     </button>

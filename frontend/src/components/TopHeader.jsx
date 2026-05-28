@@ -87,7 +87,9 @@ const TopHeader = ({ lastSynced, syncCountdown, status, setActiveView }) => {
             <div className={`sn-led ${status === 'error' ? 'bg-red-500' : 'bg-green-500 animate-sn-pulse'}`} />
             <div className="flex flex-col">
               <span className="hidden md:inline">Last Sync: {lastSynced.split(' ')[0]}</span>
-              <span className="hidden md:inline text-[9px] text-blue-300 font-bold uppercase tracking-widest">Next in {syncCountdown}s</span>
+              <span className="hidden md:inline text-[9px] text-cyan-300 font-bold uppercase tracking-widest leading-tight">
+                Next in {syncCountdown || '30'}s
+              </span>
             </div>
           </div>
         </div>
