@@ -4,11 +4,11 @@
 :root {
   --sn-header-bg: #293e40;
   --sn-sidebar-bg: #343d47;
-  --sn-main-bg: #e6e8ea;
+  --sn-main-bg: #f4f5f7; /* Slightly brighter for better contrast */
   --sn-card-bg: #ffffff;
-  --sn-text-main: #343d47;
-  --sn-link-color: #278efc;
-  --sn-border-color: #bdc0c4;
+  --sn-text-main: #172b4d; /* Enterprise Dark Blue-Grey */
+  --sn-link-color: #0052cc; /* Professional Blue */
+  --sn-border-color: #dfe1e6;
   --font-main: 'Inter', sans-serif;
 }
 
@@ -20,9 +20,9 @@ body {
   @apply transition-colors duration-300;
 }
 
-/* Removal of brutalist custom cursor */
-* {
-  cursor: auto !important;
+/* Fix Cursor issues - removed the global auto !important */
+button, a, .sn-nav-item, [role="button"] {
+  cursor: pointer;
 }
 
 /* Layout Components */
@@ -30,14 +30,15 @@ body {
   height: 50px;
   background-color: var(--sn-header-bg);
   display: flex;
-  items-center: center;
-  padding: 0 15px;
+  align-items: center;
+  padding: 0 20px;
   color: white;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .sn-sidebar {
@@ -54,152 +55,156 @@ body {
 .sn-content {
   margin-left: 250px;
   margin-top: 50px;
-  padding: 20px;
+  padding: 24px;
   min-height: calc(100vh - 50px);
 }
 
-/* Enterprise Card Style */
+/* Professional Card Style */
 .sn-card {
   background-color: var(--sn-card-bg);
   border: 1px solid var(--sn-border-color);
-  border-radius: 3px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  margin-bottom: 20px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(9, 30, 66, 0.08);
+  margin-bottom: 24px;
   overflow: hidden;
 }
 
 .sn-card-header {
-  padding: 10px 15px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--sn-border-color);
   font-weight: 600;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #f8f9fa;
+  background-color: #f4f5f7;
+  color: #5e6c84;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .sn-card-body {
-  padding: 15px;
-}
-
-/* Typography Overrides */
-h1, h2, h3, h4, h5, h6 {
-  @apply font-semibold tracking-normal;
-  text-transform: none;
-  line-height: 1.2;
-}
-
-.text-massive {
-  font-size: 2.5rem;
-  font-weight: 700;
+  padding: 16px;
 }
 
 /* Markdown Content Styling */
 .markdown-content {
-  @apply leading-relaxed text-sm;
-  color: #333;
+  @apply leading-relaxed text-[15px];
+  color: #172b4d;
 }
 
 .markdown-content h1 {
   @apply text-2xl font-bold mb-4 mt-6 border-b pb-2;
 }
 
-.markdown-content h2 {
-  @apply text-xl font-bold mb-3 mt-5;
-}
-
-.markdown-content h3 {
-  @apply text-lg font-bold mb-2 mt-4;
-}
-
-.markdown-content strong {
-  @apply font-bold;
-}
-
-.markdown-content code {
-  @apply bg-gray-100 text-red-600 px-1 rounded font-mono text-xs;
-}
-
-.markdown-content pre {
-  @apply bg-gray-800 text-gray-100 p-4 rounded-md my-4 overflow-x-auto;
-}
-
-.markdown-content blockquote {
-  @apply border-l-4 border-gray-300 pl-4 py-2 my-4 italic text-gray-600;
-}
-
 /* Navigation Items */
 .sn-nav-item {
-  padding: 10px 15px;
-  color: #bdc0c4;
-  cursor: pointer;
+  padding: 12px 20px;
+  color: #c1c7d0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 0.875rem;
+  gap: 12px;
+  font-size: 0.9rem;
+  transition: all 0.2s;
 }
 
 .sn-nav-item:hover {
-  background-color: rgba(255,255,255,0.05);
+  background-color: rgba(255,255,255,0.08);
   color: white;
 }
 
 .sn-nav-item.active {
-  background-color: var(--sn-link-color);
+  background-color: rgba(0, 82, 204, 0.2);
+  border-left: 4px solid var(--sn-link-color);
   color: white;
 }
 
 /* Buttons */
 .sn-button {
-  @apply px-4 py-2 rounded-sm text-sm font-medium transition-all;
+  @apply px-4 py-2 rounded-sm text-sm font-semibold transition-all shadow-sm;
   background-color: var(--sn-link-color);
   color: white;
 }
 
 .sn-button:hover {
-  filter: brightness(1.1);
+  background-color: #0747a6;
 }
 
 .sn-button-secondary {
-  @apply px-4 py-2 rounded-sm text-sm font-medium transition-all;
+  @apply px-4 py-2 rounded-sm text-sm font-semibold transition-all border;
   background-color: #ffffff;
-  border: 1px solid var(--sn-border-color);
-  color: var(--sn-text-main);
+  border-color: var(--sn-border-color);
+  color: #42526e;
+}
+
+.sn-button-secondary:hover {
+  background-color: #f4f5f7;
 }
 
 /* Sync Indicator Widget */
 .sn-sync-widget {
-  @apply flex items-center gap-2 text-[11px] font-medium opacity-70;
+  @apply flex items-center gap-3 text-[11px] font-bold tracking-tight px-3 py-1 bg-white/10 rounded-full;
 }
 
 .sn-led {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
 }
 
 @keyframes sn-pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .animate-sn-pulse {
-  animation: sn-pulse 2s infinite;
+  animation: sn-pulse 1.5s infinite ease-in-out;
 }
 
-/* Dark Mode Overrides (Subtle) */
+/* IMPROVED DARK MODE */
 .dark {
-  --sn-main-bg: #1a1a1a;
-  --sn-card-bg: #2b2b2b;
-  --sn-text-main: #e0e0e0;
-  --sn-border-color: #404040;
+  --sn-main-bg: #091e42; /* Deep Navy */
+  --sn-card-bg: #172b4d; /* Soft Navy */
+  --sn-text-main: #ebecf0; /* Soft White */
+  --sn-border-color: #253858;
+  --sn-header-bg: #0747a6;
 }
 
 .dark .sn-card-header {
-  background-color: #333333;
+  background-color: #091e42;
+  color: #c1c7d0;
 }
 
 .dark .markdown-content {
-  color: #e0e0e0;
+  color: #ebecf0;
+}
+
+.dark .sn-button-secondary {
+  background-color: #253858;
+  border-color: #42526e;
+  color: white;
+}
+
+.dark .sn-button-secondary:hover {
+  background-color: #42526e;
+}
+
+.dark input {
+  background-color: #091e42 !important;
+  color: white !important;
+}
+
+/* Audit Log Table */
+.sn-table {
+  @apply w-full text-left text-sm border-collapse;
+}
+
+.sn-table th {
+  @apply p-3 border-b border-gray-100 dark:border-white/10 text-[10px] uppercase font-bold text-gray-400;
+}
+
+.sn-table td {
+  @apply p-4 border-b border-gray-50 dark:border-white/5 align-top;
 }

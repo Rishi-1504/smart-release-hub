@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Bell, Settings, User, Rocket } from 'lucide-react';
 
-const TopHeader = ({ lastSynced, status, setActiveView }) => {
+const TopHeader = ({ lastSynced, syncCountdown, status, setActiveView }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef(null);
@@ -10,6 +10,7 @@ const TopHeader = ({ lastSynced, status, setActiveView }) => {
     { id: 'dashboard', label: 'Operations Dashboard', category: 'Views' },
     { id: 'notes', label: 'Release Communications', category: 'Views' },
     { id: 'readiness', label: 'Readiness Analysis', category: 'Views' },
+    { id: 'history', label: 'Release Audit Log', category: 'Views' },
     { id: 'settings', label: 'System Configuration', category: 'Admin' },
   ];
 
@@ -84,7 +85,10 @@ const TopHeader = ({ lastSynced, status, setActiveView }) => {
         <div className="flex items-center gap-3 border-r border-white/10 pr-6 mr-2">
           <div className="sn-sync-widget">
             <div className={`sn-led ${status === 'error' ? 'bg-red-500' : 'bg-green-500 animate-sn-pulse'}`} />
-            <span className="hidden md:inline">Synced: {lastSynced.split(' ')[0]}</span>
+            <div className="flex flex-col">
+              <span className="hidden md:inline">Last Sync: {lastSynced.split(' ')[0]}</span>
+              <span className="hidden md:inline text-[9px] text-blue-300 font-bold uppercase tracking-widest">Next in {syncCountdown}s</span>
+            </div>
           </div>
         </div>
         

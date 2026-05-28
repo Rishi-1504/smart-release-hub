@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { marked } from 'marked';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AlertCircle, CheckCircle2, Clock, Calendar, Shield, Activity } from 'lucide-react';
 import './App.css';
 
 // Components
@@ -17,17 +18,11 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [activeView, setActiveView] = useState('dashboard');
   const [lastSynced, setLastSynced] = useState(new Date().toLocaleTimeString());
+  const [syncCountdown, setSyncCountdown] = useState(30);
   const [settings, setSettings] = useState({});
   const [history, setHistory] = useState([]);
+  const [showSyncToast, setShowSyncToast] = useState(false);
   const abortControllerRef = useRef(null);
-
-  const cancelNotes = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      setLoading(false);
-      setContent(prev => prev + '\n\n**Generation Cancelled by User.**');
-    }
-  };
 
   const fetchReadiness = useCallback(async (save = false) => {
     setReadiness(prev => ({ ...prev, status: 'updating' }));
@@ -38,6 +33,11 @@ function App() {
       });
       setReadiness({ ...response.data, status: 'live' });
       setLastSynced(new Date().toLocaleTimeString());
+      setSyncCountdown(30);
+      if (save) {
+        setShowSyncToast(true);
+        setTimeout(() => setShowSyncToast(false), 3000);
+      }
     } catch (error) {
       console.error("Readiness fetch failed:", error.message);
       setReadiness(prev => ({ ...prev, status: 'error' }));
@@ -58,19 +58,31 @@ function App() {
     } catch (e) { console.error(e); }
   }, []);
 
+  const cancelNotes = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setLoading(false);
+      setContent(prev => prev + '\n\n**Generation Cancelled by User.**');
+    }
+  };
+
+  // Sync Countdown & Polling Logic
   useEffect(() => {
-    fetchReadiness();
-    const pollInterval = setInterval(() => {
-      fetchReadiness();
-    }, 30000);
-    return () => clearInterval(pollInterval);
+    const timer = setInterval(() => {
+      setSyncCountdown(prev => {
+        if (prev <= 1) {
+          fetchReadiness();
+          return 30;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
   }, [fetchReadiness]);
 
   useEffect(() => {
-    if (activeView === 'settings') {
-      fetchSettings();
-      fetchHistory();
-    }
+    if (activeView === 'settings') fetchSettings();
+    if (activeView === 'history') fetchHistory();
   }, [activeView, fetchSettings, fetchHistory]);
 
   useEffect(() => {
@@ -92,8 +104,6 @@ function App() {
     try {
       if (typeof content !== 'string') return { __html: '' };
       const processedContent = content.replace(/^(To|From|Subject|Date):.*$/gmi, '').trim();
-      
-      // Handle both ESM and older bundle styles for marked
       let html = '';
       if (marked && typeof marked.parse === 'function') {
         html = marked.parse(processedContent);
@@ -102,7 +112,6 @@ function App() {
       } else {
         html = processedContent;
       }
-        
       return { __html: html };
     } catch (err) {
       console.error("Markdown parsing failed:", err);
@@ -113,10 +122,7 @@ function App() {
   const fetchNotes = async (type) => {
     setActiveTab(type);
     setLoading(true);
-    
-    // Create new abort controller for this request
     abortControllerRef.current = new AbortController();
-
     try {
       const response = await axios.post(`/api/generate-notes`, {
         variant: type,
@@ -128,9 +134,7 @@ function App() {
       setContent(response.data.content);
       fetchReadiness();
     } catch (error) {
-      if (axios.isCancel(error)) {
-        console.log('Request canceled', error.message);
-      } else {
+      if (!axios.isCancel(error)) {
         setContent('**System Error:** Communication link with backend severed.');
       }
     } finally {
@@ -144,24 +148,39 @@ function App() {
       dashboard: 'Operations Dashboard',
       notes: 'Release Communications',
       readiness: 'Readiness Analysis',
+      history: 'Release Audit Log',
       settings: 'System Configuration'
     }[activeView];
 
     return (
-      <div className="py-6">
-        <header className="mb-8 border-b border-gray-300 pb-4 flex justify-between items-end">
+      <div className="py-2">
+        <header className="mb-8 flex justify-between items-end border-b border-gray-200 dark:border-white/10 pb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white uppercase tracking-tight">{viewTitle}</h1>
-            <p className="text-sm text-gray-500">Global &gt; Release Operations &gt; {viewTitle}</p>
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-white tracking-tight">{viewTitle}</h1>
+            <p className="text-sm text-gray-500 mt-1">Operational Control &gt; {viewTitle}</p>
           </div>
-          {activeView === 'dashboard' && (
+          <div className="flex items-center gap-3">
+            <AnimatePresence>
+              {showSyncToast && (
+                <motion.div 
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="bg-green-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-2"
+                >
+                  <CheckCircle2 size={12} /> RECORD SAVED TO AUDIT LOG
+                </motion.div>
+              )}
+            </AnimatePresence>
             <button 
               onClick={() => fetchReadiness(true)}
-              className="sn-button-secondary text-xs"
+              disabled={readiness.status === 'updating'}
+              className="sn-button flex items-center gap-2 px-6"
             >
-              Sync & Record Audit
+              <Activity size={16} className={readiness.status === 'updating' ? 'animate-spin' : ''} />
+              {readiness.status === 'updating' ? 'SYNCING...' : 'TRIGGER MANUAL AUDIT'}
             </button>
-          )}
+          </div>
         </header>
 
         <AnimatePresence mode="wait">
@@ -170,7 +189,7 @@ function App() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.15 }}
           >
             {activeView === 'dashboard' && (
               <>
@@ -196,54 +215,101 @@ function App() {
               />
             )}
             {activeView === 'readiness' && <MetricsOverview readiness={readiness} />}
+            
+            {activeView === 'history' && (
+              <div className="sn-card">
+                <div className="sn-card-header">
+                  <div className="flex items-center gap-2">
+                    <Clock size={16} />
+                    <span>Permanent Release History</span>
+                  </div>
+                  <button onClick={fetchHistory} className="text-blue-500 hover:underline">Refresh Logs</button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="sn-table">
+                    <thead>
+                      <tr>
+                        <th>Date & Time</th>
+                        <th>Status</th>
+                        <th>Score</th>
+                        <th>Detailed Breakdown</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {history.map(h => (
+                        <tr key={h.id}>
+                          <td className="whitespace-nowrap font-mono text-gray-500">
+                            <div className="flex items-center gap-2">
+                              <Calendar size={12} />
+                              {new Date(h.timestamp).toLocaleString()}
+                            </div>
+                          </td>
+                          <td>
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${h.verdict === 'GO' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                              {h.verdict}
+                            </span>
+                          </td>
+                          <td className="font-bold text-lg">
+                            {h.score}%
+                          </td>
+                          <td>
+                            <ul className="space-y-1">
+                              {h.details.map((d, i) => (
+                                <li key={i} className="text-[11px] text-gray-600 dark:text-gray-400 flex items-start gap-2">
+                                  <Shield size={10} className="mt-1 flex-shrink-0" />
+                                  {d}
+                                </li>
+                              ))}
+                            </ul>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {activeView === 'settings' && (
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div className="max-w-3xl">
                 <div className="sn-card">
-                  <div className="sn-card-header">Scoring Configuration</div>
+                  <div className="sn-card-header">
+                    <div className="flex items-center gap-2">
+                      <Shield size={16} />
+                      <span>Release Gate Weights</span>
+                    </div>
+                  </div>
                   <div className="sn-card-body space-y-4">
                     {Object.entries(settings).map(([key, value]) => (
-                      <div key={key} className="flex justify-between items-center border-b border-gray-50 pb-2">
-                        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{key.replace(/_/g, ' ')}</span>
+                      <div key={key} className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-white/5 last:border-0">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">{key.replace(/_/g, ' ')}</span>
+                          <span className="text-[10px] text-gray-400">Impact on the final readiness score</span>
+                        </div>
                         <input 
                           type="number" 
                           value={value} 
                           onChange={(e) => updateSetting(key, e.target.value)}
-                          className="w-20 bg-gray-50 border border-gray-200 rounded px-2 py-1 text-xs text-right focus:outline-none focus:border-sn-link-color"
+                          className="w-24 bg-gray-50 dark:bg-[#091e42] border border-gray-200 dark:border-white/10 rounded px-3 py-2 text-sm text-right font-mono"
                         />
                       </div>
                     ))}
-                    <div className="pt-4 flex justify-between items-center">
-                      <span className="text-sm font-bold">Theme Mode</span>
-                      <button 
-                        onClick={() => setDarkMode(!darkMode)}
-                        className="sn-button text-xs"
-                      >
-                        Switch to {darkMode ? 'Light' : 'Dark'}
-                      </button>
-                    </div>
                   </div>
                 </div>
 
                 <div className="sn-card">
-                  <div className="sn-card-header">Release Audit Log</div>
-                  <div className="sn-card-body max-h-[400px] overflow-y-auto">
-                    {history.length > 0 ? (
-                      <div className="space-y-2">
-                        {history.map((h) => (
-                          <div key={h.id} className="p-3 border border-gray-100 rounded-sm bg-gray-50 dark:bg-white/5 flex justify-between items-center">
-                            <div>
-                              <p className="text-[10px] font-bold text-gray-400">{new Date(h.timestamp).toLocaleString()}</p>
-                              <p className="text-xs font-semibold">Score: <span className={h.score >= (settings.target_score || 70) ? 'text-green-600' : 'text-red-600'}>{h.score}%</span></p>
-                            </div>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${h.verdict === 'GO' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                              {h.verdict}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-center py-10 text-xs text-gray-400 italic">No history recorded yet.</p>
-                    )}
+                  <div className="sn-card-header">Display Preferences</div>
+                  <div className="sn-card-body flex justify-between items-center">
+                    <div>
+                      <p className="font-bold">Dark Mode</p>
+                      <p className="text-xs text-gray-500">Enable high-contrast dark interface</p>
+                    </div>
+                    <button 
+                      onClick={() => setDarkMode(!darkMode)}
+                      className="sn-button-secondary"
+                    >
+                      {darkMode ? 'Switch to Light' : 'Switch to Dark'}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -261,6 +327,7 @@ function App() {
       activeView={activeView}
       setActiveView={setActiveView}
       lastSynced={lastSynced}
+      syncCountdown={syncCountdown}
       status={readiness.status}
     >
       {renderContent()}

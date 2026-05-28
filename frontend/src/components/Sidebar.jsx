@@ -21,6 +21,7 @@ const Sidebar = ({ darkMode, setDarkMode, activeView, setActiveView }) => {
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={16} /> },
     { id: 'notes', label: 'Release Notes', icon: <FileText size={16} /> },
     { id: 'readiness', label: 'Readiness Score', icon: <ShieldCheck size={16} /> },
+    { id: 'history', label: 'Release Audit Log', icon: <History size={16} /> },
     { id: 'settings', label: 'System Settings', icon: <Settings size={16} /> },
   ];
 
