@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { ShieldCheck, AlertTriangle, Info, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, CheckCircle2, ListFilter } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 const MetricsOverview = memo(({ readiness }) => {
@@ -10,30 +10,31 @@ const MetricsOverview = memo(({ readiness }) => {
     { name: 'Remaining', value: 100 - readiness.score },
   ];
   
-  const COLORS = [isGo ? '#000000' : '#FF0000', '#f2f2f2'];
-  const DARK_COLORS = [isGo ? '#FFFFFF' : '#FF0000', '#333333'];
+  const COLORS = [isGo ? '#278efc' : '#e91e63', '#f2f2f2'];
+  const DARK_COLORS = [isGo ? '#278efc' : '#e91e63', '#404040'];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-12">
-      {/* Main Score Card - Brutalist */}
-      <div className="lg:col-span-1 premium-card p-12">
-        <div className="flex flex-col items-center text-center">
-          <span className="text-[12px] font-black uppercase tracking-[0.4em] text-black dark:text-white mb-10 border-b-4 border-black dark:border-white pb-2">Readiness Score</span>
-          
-          <div className="relative w-64 h-64 mb-10">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      {/* Readiness Score Widget */}
+      <div className="lg:col-span-1 sn-card">
+        <div className="sn-card-header">
+          <span>Readiness Score</span>
+          <ShieldCheck size={16} className={isGo ? 'text-green-500' : 'text-red-500'} />
+        </div>
+        <div className="sn-card-body flex flex-col items-center">
+          <div className="relative w-48 h-48 my-4">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={data}
-                  innerRadius={85}
-                  outerRadius={105}
+                  innerRadius={65}
+                  outerRadius={80}
                   paddingAngle={0}
                   dataKey="value"
                   startAngle={90}
                   endAngle={450}
-                  stroke={document.documentElement.classList.contains('dark') ? '#FFFFFF' : '#000000'}
-                  strokeWidth={2}
-                  isAnimationActive={false}
+                  stroke="none"
+                  isAnimationActive={true}
                 >
                   <Cell fill={document.documentElement.classList.contains('dark') ? DARK_COLORS[0] : COLORS[0]} />
                   <Cell fill={document.documentElement.classList.contains('dark') ? DARK_COLORS[1] : COLORS[1]} />
@@ -41,57 +42,58 @@ const MetricsOverview = memo(({ readiness }) => {
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-7xl font-black tracking-tighter text-black dark:text-white">
+              <span className="text-4xl font-bold text-gray-800 dark:text-white">
                 {readiness.score}%
               </span>
+              <span className="text-[10px] uppercase font-bold text-gray-400">Target: 70%</span>
             </div>
           </div>
           
-          <div className={`inline-flex items-center gap-4 px-8 py-4 border-4 font-black text-sm tracking-tighter uppercase ${
-            isGo ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)]' : 'bg-red-600 text-white border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)]'
+          <div className={`w-full mt-4 p-3 rounded-sm text-center font-bold text-sm border ${
+            isGo 
+              ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400' 
+              : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400'
           }`}>
-            {isGo ? <ShieldCheck size={24} strokeWidth={3} /> : <AlertTriangle size={24} strokeWidth={3} />}
-            {readiness.verdict} VERDICT
+            VERDICT: {readiness.verdict}
           </div>
         </div>
       </div>
 
-      {/* Details Card - Stark Grid Style */}
-      <div className="lg:col-span-2 premium-card p-12">
-        <div className="flex items-center justify-between mb-12 border-b-4 border-black dark:border-white pb-4">
-          <h3 className="text-3xl font-black text-black dark:text-white flex items-center gap-4 uppercase tracking-tighter">
-            <div className="p-2 bg-black dark:bg-white text-white dark:text-black">
-              <Info size={28} />
-            </div>
-            Neural Checks
-          </h3>
+      {/* Quality Gates / Checks List */}
+      <div className="lg:col-span-2 sn-card">
+        <div className="sn-card-header">
+          <div className="flex items-center gap-2">
+            <ListFilter size={16} />
+            <span>Quality Gates</span>
+          </div>
+          <span className="text-[10px] font-normal text-gray-500">{readiness.details.length} Active Checks</span>
         </div>
         
-        <div className="space-y-6 h-[320px] overflow-y-auto pr-6 custom-scrollbar">
+        <div className="sn-card-body h-[280px] overflow-y-auto">
           {readiness.details.length > 0 ? (
-            readiness.details.map((detail, index) => (
-              <div 
-                key={index} 
-                className="flex items-center gap-6 p-6 border-[2.5px] border-black dark:border-white bg-[#f2f2f2] dark:bg-black hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-100 group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
-              >
-                <div className="flex-shrink-0">
-                  {detail.includes('Blockers') ? (
-                    <AlertTriangle size={28} strokeWidth={3} className="text-red-600 group-hover:text-white dark:group-hover:text-black" />
-                  ) : detail.includes('Failed') ? (
-                    <AlertTriangle size={28} strokeWidth={3} className="text-red-600 group-hover:text-white dark:group-hover:text-black" />
-                  ) : (
-                    <CheckCircle2 size={28} strokeWidth={3} className="text-black dark:text-white group-hover:text-white dark:group-hover:text-black" />
-                  )}
+            <div className="space-y-1">
+              {readiness.details.map((detail, index) => (
+                <div 
+                  key={index} 
+                  className="flex items-center gap-4 p-3 border-b border-gray-50 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group"
+                >
+                  <div className="flex-shrink-0">
+                    {detail.includes('Blockers') || detail.includes('Failed') ? (
+                      <AlertTriangle size={18} className="text-red-500" />
+                    ) : (
+                      <CheckCircle2 size={18} className="text-green-500" />
+                    )}
+                  </div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {detail}
+                  </p>
                 </div>
-                <p className="text-lg font-black uppercase tracking-tighter leading-none text-black dark:text-white group-hover:text-white dark:group-hover:text-black">
-                  {detail}
-                </p>
-              </div>
-            ))
+              ))}
+            </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full border-4 border-dashed border-black/20 dark:border-white/20">
-              <CheckCircle2 size={64} className="mb-4 opacity-10" />
-              <p className="font-black text-xl uppercase tracking-widest opacity-20">System Optimal</p>
+            <div className="flex flex-col items-center justify-center h-full text-gray-400">
+              <CheckCircle2 size={48} className="mb-4 opacity-20" />
+              <p className="text-sm font-medium">All systems optimal</p>
             </div>
           )}
         </div>

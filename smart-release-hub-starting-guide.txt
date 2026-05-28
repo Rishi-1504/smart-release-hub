@@ -1,0 +1,24 @@
+✦ Since we've converted the app to a Single-Origin Architecture with a Static ngrok Domain, your restart process is now extremely fast and simple.
+
+  The "One-Two" Routine (To go Live):
+
+  Step 1: Start the Backend Server
+  Open a terminal and run:
+
+   ./venv/bin/python3 main.py
+   
+  Wait 2 seconds for it to say Application startup complete.
+
+  Step 2: Start the Permanent Tunnel
+  Open a second terminal and run:
+
+   ngrok http 8000 --domain=flashily-pension-wagon.ngrok-free.dev
+
+  ---
+
+  How to access it:
+
+   * For You (Local): Open your browser and go to http://localhost:8000.
+   * For Everyone Else (Public): Share your permanent link:
+      https://flashily-pension-wagon.ngrok-free.dev
+

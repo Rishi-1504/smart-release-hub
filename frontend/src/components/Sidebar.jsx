@@ -1,80 +1,95 @@
-import React from 'react';
-import { Rocket, Zap, Moon, Sun, LayoutDashboard, FileText, Settings, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  LayoutDashboard, 
+  FileText, 
+  Settings, 
+  ShieldCheck, 
+  Search, 
+  History, 
+  Star,
+  Sun,
+  Moon
+} from 'lucide-react';
 
 const Sidebar = ({ darkMode, setDarkMode, activeView, setActiveView }) => {
-  return (
-    <aside className="w-64 min-h-screen border-r-4 border-black dark:border-white flex flex-col transition-colors duration-300 bg-[#f2f2f2] dark:bg-black">
-      <div className="p-8">
-        {/* Branding - Stark Brutalist */}
-        <div 
-          className="flex items-center gap-3 mb-16 cursor-pointer border-b-4 border-black dark:border-white pb-8" 
-          onClick={() => setActiveView('dashboard')}
-        >
-          <div className="p-2.5 bg-black dark:bg-white text-white dark:text-black border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)]">
-            <Rocket size={24} strokeWidth={3} />
-          </div>
-          <span className="font-black text-2xl tracking-tighter uppercase text-black dark:text-white">
-            Smart<span className="bg-black text-white dark:bg-white dark:text-black px-1">Hub</span>
-          </span>
-        </div>
+  const [filter, setFilter] = useState('');
 
-        <nav className="space-y-4">
-          <NavItem 
-            icon={<LayoutDashboard size={20} />} 
-            label="Dashboard" 
-            active={activeView === 'dashboard'} 
-            onClick={() => setActiveView('dashboard')}
-          />
-          <NavItem 
-            icon={<FileText size={20} />} 
-            label="Release Notes" 
-            active={activeView === 'notes'} 
-            onClick={() => setActiveView('notes')}
-          />
-          <NavItem 
-            icon={<ShieldCheck size={20} />} 
-            label="Readiness" 
-            active={activeView === 'readiness'} 
-            onClick={() => setActiveView('readiness')}
-          />
-          <NavItem 
-            icon={<Settings size={20} />} 
-            label="Settings" 
-            active={activeView === 'settings'} 
-            onClick={() => setActiveView('settings')}
-          />
-        </nav>
+  const menuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={16} /> },
+    { id: 'notes', label: 'Release Notes', icon: <FileText size={16} /> },
+    { id: 'readiness', label: 'Readiness Score', icon: <ShieldCheck size={16} /> },
+    { id: 'settings', label: 'System Settings', icon: <Settings size={16} /> },
+  ];
+
+  const filteredItems = menuItems.filter(item => 
+    item.label.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  return (
+    <aside className="sn-sidebar flex flex-col">
+      {/* Navigator Tabs (Mock) */}
+      <div className="flex border-b border-white/10">
+        <button className="flex-1 py-3 flex justify-center text-white border-b-2 border-sn-link-color">
+          <Search size={16} />
+        </button>
+        <button className="flex-1 py-3 flex justify-center text-gray-400 hover:text-white transition-colors">
+          <Star size={16} />
+        </button>
+        <button className="flex-1 py-3 flex justify-center text-gray-400 hover:text-white transition-colors">
+          <History size={16} />
+        </button>
       </div>
 
-      {/* Theme Toggle - Brutalist Button */}
-      <div className="mt-auto p-8 border-t-4 border-black dark:border-white">
-        <button
+      {/* Filter Input */}
+      <div className="p-3 border-b border-white/10">
+        <div className="relative">
+          <input 
+            type="text" 
+            placeholder="Filter navigator" 
+            className="w-full bg-[#3d4853] border border-white/10 rounded-sm py-1.5 pl-3 pr-8 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-white/20"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          />
+          {filter && (
+            <button 
+              className="absolute right-2 top-1.5 text-gray-400 hover:text-white"
+              onClick={() => setFilter('')}
+            >
+              ×
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Navigation Links */}
+      <nav className="flex-1 py-2 overflow-y-auto">
+        <div className="px-3 py-2 text-[10px] font-bold uppercase text-gray-500 tracking-wider">
+          Release Operations
+        </div>
+        {filteredItems.map((item) => (
+          <div 
+            key={item.id}
+            onClick={() => setActiveView(item.id)}
+            className={`sn-nav-item ${activeView === item.id ? 'active' : ''}`}
+          >
+            {item.icon}
+            <span>{item.label}</span>
+          </div>
+        ))}
+      </nav>
+
+      {/* Theme Toggle Utility */}
+      <div className="mt-auto border-t border-white/10 p-3">
+        <div 
           onClick={() => setDarkMode(!darkMode)}
-          className="flex items-center justify-center gap-3 w-full px-5 py-4 border-4 border-black dark:border-white bg-white dark:bg-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] transition-all font-black text-xs uppercase tracking-widest text-black dark:text-white"
+          className="sn-nav-item rounded hover:bg-white/5 transition-colors cursor-pointer"
         >
-          {darkMode ? <Sun size={18} strokeWidth={3} /> : <Moon size={18} strokeWidth={3} />}
-          {darkMode ? 'Light' : 'Dark'}
-        </button>
+          {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+          <span>{darkMode ? 'Switch to Light' : 'Switch to Dark'}</span>
+        </div>
       </div>
     </aside>
   );
 };
-
-const NavItem = ({ icon, label, active = false, onClick }) => (
-  <button
-    onClick={(e) => {
-      e.preventDefault();
-      onClick();
-    }}
-    className={`w-full flex items-center gap-4 px-5 py-4 border-4 transition-all font-black text-xs uppercase tracking-tighter ${
-      active
-        ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-[6px_6px_0px_0px_rgba(0,0,0,0.2)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.2)]'
-        : 'bg-transparent text-black dark:text-white border-transparent hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5'
-    }`}
-  >
-    <span className={active ? 'scale-110' : ''}>{icon}</span>
-    {label}
-  </button>
-);
 
 export default Sidebar;

@@ -1,27 +1,27 @@
 import React from 'react';
-import { Cpu, CheckCircle, BarChart3, FileText, Sparkles } from 'lucide-react';
+import { Cpu, CheckCircle, BarChart3, Sparkles, Wand2 } from 'lucide-react';
 
 const AiGenerationPanel = ({ activeTab, fetchNotes, content, loading, getMarkdownText }) => {
   const tabs = [
-    { id: 'technical', label: 'Technical', icon: <Cpu size={18} /> },
-    { id: 'qa', label: 'QA Summary', icon: <CheckCircle size={18} /> },
-    { id: 'executive', label: 'Executive', icon: <BarChart3 size={18} /> },
+    { id: 'technical', label: 'Technical', icon: <Cpu size={14} /> },
+    { id: 'qa', label: 'QA Summary', icon: <CheckCircle size={14} /> },
+    { id: 'executive', label: 'Executive', icon: <BarChart3 size={14} /> },
   ];
 
   return (
-    <div className="premium-card overflow-hidden flex flex-col min-h-[600px]">
-      {/* Header / Tabs - Stark Brutalist Style */}
-      <div className="px-10 py-10 border-b-[2.5px] border-black dark:border-white flex flex-col md:flex-row md:items-center justify-between gap-6 bg-[#f2f2f2] dark:bg-black/50">
-        <div className="flex items-center gap-4 overflow-x-auto no-scrollbar">
+    <div className="sn-card min-h-[500px] flex flex-col">
+      {/* ServiceNow Workspace Tabs */}
+      <div className="bg-[#f8f9fa] dark:bg-[#333] border-b border-sn-border-color">
+        <div className="flex px-4 pt-2">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => fetchNotes(tab.id)}
               disabled={loading}
-              className={`flex items-center gap-3 px-6 py-3 border-[2.5px] transition-all font-black text-xs uppercase tracking-tighter whitespace-nowrap ${
+              className={`flex items-center gap-2 px-6 py-2 text-sm font-medium transition-all border-t border-l border-r rounded-t-sm -mb-[1px] ${
                 activeTab === tab.id
-                  ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]'
-                  : 'bg-white text-black border-black dark:bg-black dark:text-white dark:border-white hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]'
+                  ? 'bg-white dark:bg-[#2b2b2b] border-sn-border-color border-b-white dark:border-b-[#2b2b2b] text-sn-link-color'
+                  : 'bg-transparent border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
               {tab.icon}
@@ -29,20 +29,37 @@ const AiGenerationPanel = ({ activeTab, fetchNotes, content, loading, getMarkdow
             </button>
           ))}
         </div>
+      </div>
 
-        <div className="hidden sm:flex items-center gap-2 text-black dark:text-white font-black text-[10px] uppercase tracking-[0.25em] border-2 border-black dark:border-white px-4 py-2 bg-white dark:bg-black">
-          <Sparkles size={14} className={loading ? 'animate-pulse' : ''} />
-          {loading ? 'Synthesizing...' : 'AI Engine Active'}
+      {/* Header Actions Area */}
+      <div className="px-6 py-3 border-b border-sn-border-color flex justify-between items-center bg-white dark:bg-[#2b2b2b]">
+        <div className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-gray-400">
+          <Wand2 size={14} />
+          <span>AI Content Generator</span>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+            <Sparkles size={12} className={loading ? 'animate-pulse text-sn-link-color' : ''} />
+            {loading ? 'Processing...' : 'Engine Ready'}
+          </div>
+          <button 
+            onClick={() => fetchNotes(activeTab)}
+            disabled={loading}
+            className="sn-button text-xs py-1.5"
+          >
+            Regenerate
+          </button>
         </div>
       </div>
 
-      {/* Content Area - Stark White/Black */}
-      <div className="p-12 md:p-20 flex-1 relative bg-white dark:bg-black">
+      {/* Content Workspace */}
+      <div className="p-8 md:p-12 flex-1 bg-white dark:bg-[#2b2b2b]">
         {loading ? (
           <SkeletonLoader />
         ) : (
           <article 
-            className="markdown-content"
+            className="markdown-content max-w-none"
             dangerouslySetInnerHTML={getMarkdownText()} 
           />
         )}
@@ -53,16 +70,16 @@ const AiGenerationPanel = ({ activeTab, fetchNotes, content, loading, getMarkdow
 
 const SkeletonLoader = () => (
   <div className="space-y-6 animate-pulse">
-    <div className="h-10 bg-slate-200 dark:bg-slate-800 rounded-xl w-3/4" />
+    <div className="h-8 bg-gray-100 dark:bg-gray-800 rounded w-3/4" />
     <div className="space-y-3">
-      <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-lg w-full" />
-      <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-lg w-full" />
-      <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-lg w-5/6" />
+      <div className="h-3 bg-gray-50 dark:bg-gray-800 rounded w-full" />
+      <div className="h-3 bg-gray-50 dark:bg-gray-800 rounded w-full" />
+      <div className="h-3 bg-gray-50 dark:bg-gray-800 rounded w-5/6" />
     </div>
-    <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-xl w-1/2 mt-10" />
+    <div className="h-6 bg-gray-100 dark:bg-gray-800 rounded w-1/2 mt-10" />
     <div className="space-y-3">
-      <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-lg w-full" />
-      <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-lg w-4/5" />
+      <div className="h-3 bg-gray-50 dark:bg-gray-800 rounded w-full" />
+      <div className="h-3 bg-gray-50 dark:bg-gray-800 rounded w-4/5" />
     </div>
   </div>
 );

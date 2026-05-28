@@ -1,159 +1,205 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --brand-primary: #FF6B00; /* HIGH-VOLTAGE ORANGE */
+  --sn-header-bg: #293e40;
+  --sn-sidebar-bg: #343d47;
+  --sn-main-bg: #e6e8ea;
+  --sn-card-bg: #ffffff;
+  --sn-text-main: #343d47;
+  --sn-link-color: #278efc;
+  --sn-border-color: #bdc0c4;
   --font-main: 'Inter', sans-serif;
-  --bg-color: #f2f2f2;
-}
-
-/* 
-   WORLD-CLASS AVANT-GARDE BASE 
-   High-Voltage Industrial Edition
-*/
-
-* {
-  cursor: none !important;
 }
 
 body {
   margin: 0;
   font-family: var(--font-main);
-  @apply transition-colors duration-300 bg-[#f2f2f2] text-black overflow-x-hidden selection:bg-[#FF6B00] selection:text-white;
+  background-color: var(--sn-main-bg);
+  color: var(--sn-text-main);
+  @apply transition-colors duration-300;
 }
 
-.dark body {
-  @apply bg-[#050505] text-[#FF6B00] selection:bg-white selection:text-black;
+/* Removal of brutalist custom cursor */
+* {
+  cursor: auto !important;
 }
 
-/* 
-   CYBER-INDUSTRIAL OVERLAYS 
-*/
-
-.cyber-overlay {
+/* Layout Components */
+.sn-header {
+  height: 50px;
+  background-color: var(--sn-header-bg);
+  display: flex;
+  items-center: center;
+  padding: 0 15px;
+  color: white;
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 9999;
+  right: 0;
+  z-index: 1000;
 }
 
-.scanline {
-  width: 100%;
-  height: 4px;
-  background: linear-gradient(to bottom, transparent, rgba(255, 107, 0, 0.05), transparent);
-  position: absolute;
-  animation: scanline 10s linear infinite;
-}
-
-.noise {
+.sn-sidebar {
+  width: 250px;
+  background-color: var(--sn-sidebar-bg);
   position: fixed;
-  top: -50%; left: -50%; width: 200%; height: 200%;
-  background: transparent url('http://assets.iceable.com/img/noise.png') repeat;
-  animation: noise 0.2s infinite;
-  opacity: .05;
-  z-index: 9998;
+  top: 50px;
+  left: 0;
+  bottom: 0;
+  z-index: 900;
+  overflow-y: auto;
 }
 
-@keyframes scanline { 0% { top: 0%; } 100% { top: 100%; } }
-@keyframes noise { 0% { transform: translate(0,0) } 100% { transform: translate(5%,5%) } }
-
-/* 
-   BRUTALIST ARCHITECTURE (HIGH-VOLTAGE)
-*/
-
-.premium-card {
-  @apply bg-white dark:bg-[#0a0a0a] border-[4px] border-black dark:border-[#FF6B00] rounded-none shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] dark:shadow-[16px_16px_0px_0px_rgba(255,107,0,0.3)] transition-all duration-200 relative overflow-hidden;
+.sn-content {
+  margin-left: 250px;
+  margin-top: 50px;
+  padding: 20px;
+  min-height: calc(100vh - 50px);
 }
 
-.premium-card:hover {
-  @apply translate-x-[-4px] translate-y-[-4px] shadow-[20px_20px_0px_0px_rgba(0,0,0,1)] dark:shadow-[20px_20px_0px_0px_rgba(255,107,0,0.5)];
+/* Enterprise Card Style */
+.sn-card {
+  background-color: var(--sn-card-bg);
+  border: 1px solid var(--sn-border-color);
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+  overflow: hidden;
 }
 
-/* 
-   KINETIC TYPOGRAPHY 
-*/
+.sn-card-header {
+  padding: 10px 15px;
+  border-bottom: 1px solid var(--sn-border-color);
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f8f9fa;
+}
+
+.sn-card-body {
+  padding: 15px;
+}
+
+/* Typography Overrides */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-semibold tracking-normal;
+  text-transform: none;
+  line-height: 1.2;
+}
 
 .text-massive {
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: -0.05em;
-  line-height: 0.8;
-  font-size: clamp(4rem, 15vw, 12rem);
+  font-size: 2.5rem;
+  font-weight: 700;
 }
 
-.dark .text-massive {
-  color: #FF6B00;
-}
-
-/* 
-   AVANT-GARDE TYPOGRAPHY (NEURAL STREAM)
-*/
-
+/* Markdown Content Styling */
 .markdown-content {
-  @apply leading-[1.2] text-black dark:text-white font-bold;
-  font-size: 1.25rem;
+  @apply leading-relaxed text-sm;
+  color: #333;
 }
 
-.markdown-content h1 { 
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: -0.05em;
-  line-height: 0.8;
-  font-size: clamp(4rem, 15vw, 12rem);
-  @apply mb-12 border-b-[12px] border-black dark:border-[#FF6B00] pb-4;
+.markdown-content h1 {
+  @apply text-2xl font-bold mb-4 mt-6 border-b pb-2;
 }
 
-.markdown-content h2 { 
-  @apply text-5xl font-black uppercase mt-16 mb-8 border-l-[16px] border-[#FF6B00] pl-8 text-black dark:text-[#FF6B00];
+.markdown-content h2 {
+  @apply text-xl font-bold mb-3 mt-5;
 }
 
 .markdown-content h3 {
-  @apply text-2xl font-black uppercase mt-12 mb-4 bg-[#FF6B00] text-black inline-block px-4 py-1;
+  @apply text-lg font-bold mb-2 mt-4;
 }
 
 .markdown-content strong {
-  @apply font-black underline decoration-[8px] decoration-[#FF6B00] underline-offset-4;
+  @apply font-bold;
 }
 
 .markdown-content code {
-  @apply bg-black dark:bg-[#FF6B00] text-white dark:text-black px-3 py-1 font-black font-mono shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.2)];
+  @apply bg-gray-100 text-red-600 px-1 rounded font-mono text-xs;
 }
 
 .markdown-content pre {
-  @apply bg-black text-[#FF6B00] p-10 border-[6px] border-[#FF6B00] shadow-[24px_24px_0px_0px_rgba(0,0,0,1)] my-16 relative;
+  @apply bg-gray-800 text-gray-100 p-4 rounded-md my-4 overflow-x-auto;
 }
 
 .markdown-content blockquote {
-  @apply border-l-[32px] border-[#FF6B00] bg-[#FF6B00]/10 px-12 py-10 my-16 italic text-4xl font-black tracking-tighter leading-none text-black dark:text-[#FF6B00];
+  @apply border-l-4 border-gray-300 pl-4 py-2 my-4 italic text-gray-600;
 }
 
-/* 
-   LED INDICATORS (WARNING YELLOW)
-*/
-
-@keyframes led-blink {
-  0% { background-color: #FFD600; box-shadow: 0 0 30px rgba(255,214,0,1); }
-  50% { background-color: #453b00; box-shadow: none; opacity: 0.4; }
-  100% { background-color: #FFD600; box-shadow: 0 0 30px rgba(255,214,0,1); }
+/* Navigation Items */
+.sn-nav-item {
+  padding: 10px 15px;
+  color: #bdc0c4;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.875rem;
 }
 
-.animate-led {
-  animation: led-blink 0.8s steps(2, start) infinite;
+.sn-nav-item:hover {
+  background-color: rgba(255,255,255,0.05);
+  color: white;
 }
 
-/* 
-   CUSTOM SCROLLBAR (INDUSTRIAL)
-*/
+.sn-nav-item.active {
+  background-color: var(--sn-link-color);
+  color: white;
+}
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 20px;
+/* Buttons */
+.sn-button {
+  @apply px-4 py-2 rounded-sm text-sm font-medium transition-all;
+  background-color: var(--sn-link-color);
+  color: white;
 }
-.custom-scrollbar::-webkit-scrollbar-track {
-  @apply bg-black border-l-4 border-[#FF6B00];
+
+.sn-button:hover {
+  filter: brightness(1.1);
 }
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-[#FF6B00] border-4 border-black;
+
+.sn-button-secondary {
+  @apply px-4 py-2 rounded-sm text-sm font-medium transition-all;
+  background-color: #ffffff;
+  border: 1px solid var(--sn-border-color);
+  color: var(--sn-text-main);
+}
+
+/* Sync Indicator Widget */
+.sn-sync-widget {
+  @apply flex items-center gap-2 text-[11px] font-medium opacity-70;
+}
+
+.sn-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+@keyframes sn-pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.animate-sn-pulse {
+  animation: sn-pulse 2s infinite;
+}
+
+/* Dark Mode Overrides (Subtle) */
+.dark {
+  --sn-main-bg: #1a1a1a;
+  --sn-card-bg: #2b2b2b;
+  --sn-text-main: #e0e0e0;
+  --sn-border-color: #404040;
+}
+
+.dark .sn-card-header {
+  background-color: #333333;
+}
+
+.dark .markdown-content {
+  color: #e0e0e0;
 }
