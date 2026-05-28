@@ -22,39 +22,52 @@ function App() {
   const [settings, setSettings] = useState({});
   const [history, setHistory] = useState([]);
   const [showSyncToast, setShowSyncToast] = useState(false);
+  const lastScoreRef = useRef(null); // To track score changes
   const abortControllerRef = useRef(null);
-
-  const fetchReadiness = useCallback(async (save = false) => {
-    setReadiness(prev => ({ ...prev, status: 'updating' }));
-    try {
-      const url = `/api/readiness?t=${Date.now()}${save ? '&save=true' : ''}`;
-      const response = await axios.get(url, {
-        headers: { 'ngrok-skip-browser-warning': 'true' }
-      });
-      setReadiness({ ...response.data, status: 'live' });
-      setLastSynced(new Date().toLocaleTimeString());
-      setSyncCountdown(30);
-      if (save) {
-        setShowSyncToast(true);
-        setTimeout(() => setShowSyncToast(false), 3000);
-      }
-    } catch (error) {
-      console.error("Readiness fetch failed:", error.message);
-      setReadiness(prev => ({ ...prev, status: 'error' }));
-    }
-  }, []);
-
-  const fetchSettings = useCallback(async () => {
-    try {
-      const response = await axios.get('/api/settings');
-      setSettings(response.data);
-    } catch (e) { console.error(e); }
-  }, []);
 
   const fetchHistory = useCallback(async () => {
     try {
       const response = await axios.get('/api/history');
       setHistory(response.data);
+    } catch (e) { console.error(e); }
+  }, []);
+
+  const fetchReadiness = useCallback(async (save = false) => {
+    setReadiness(prev => ({ ...prev, status: 'updating' }));
+    try {
+      // If manually triggered, we always save. If automatic, we save only on change.
+      const url = `/api/readiness?t=${Date.now()}`;
+      const response = await axios.get(url, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      
+      const newScore = response.data.score;
+      setReadiness({ ...response.data, status: 'live' });
+      setLastSynced(new Date().toLocaleTimeString());
+      setSyncCountdown(30);
+
+      // Save logic: Manual trigger OR score changed
+      if (save || (lastScoreRef.current !== null && lastScoreRef.current !== newScore)) {
+        await axios.get(`/api/readiness?save=true&t=${Date.now()}`, {
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        });
+        fetchHistory(); // Update history list immediately
+        if (save) {
+          setShowSyncToast(true);
+          setTimeout(() => setShowSyncToast(false), 3000);
+        }
+      }
+      lastScoreRef.current = newScore;
+    } catch (error) {
+      console.error("Readiness fetch failed:", error.message);
+      setReadiness(prev => ({ ...prev, status: 'error' }));
+    }
+  }, [fetchHistory]);
+
+  const fetchSettings = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/settings');
+      setSettings(response.data);
     } catch (e) { console.error(e); }
   }, []);
 
@@ -66,12 +79,13 @@ function App() {
     }
   };
 
-  // Sync Countdown & Polling Logic
+  // Immediate fetch on mount + Sync Countdown logic
   useEffect(() => {
+    fetchReadiness(); // Fetch immediately on load
     const timer = setInterval(() => {
       setSyncCountdown(prev => {
         if (prev <= 1) {
-          fetchReadiness();
+          fetchReadiness(); // Automatic sync (no save unless score changes)
           return 30;
         }
         return prev - 1;
