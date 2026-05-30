@@ -281,7 +281,9 @@ async def get_readiness(save: bool = False):
         details.append(f"Found {len(untested)} untested/incomplete tickets.{cap_note} (-{untested_deduction} pts)")
 
     # 3. GitHub Scoring: Failed Builds
-    if github_data["build_status"] not in ["success", "in_progress", "no_builds"]:
+    # Only penalise confirmed failures — unknown/cancelled/skipped are not failures
+    FAILED_STATUSES = {"failure", "timed_out", "action_required"}
+    if github_data["build_status"] in FAILED_STATUSES:
         score -= config["weight_failed_build"]
         details.append(f"Last GitHub Action build failed ({github_data['build_status']}). (-{config['weight_failed_build']} pts)")
         

@@ -23,11 +23,27 @@ const MetricsOverview = memo(({ readiness, history = [], darkMode = false }) => 
     i => i.status !== 'Done' && !(i.priority === 'Highest' || i.priority === 'High')
   );
 
-  // Sparkline: last 10 history entries in ascending order
-  const sparkData = [...history].reverse().slice(-10).map((h, i) => ({
-    i,
-    score: h.score,
-  }));
+  // Sparkline: clean and deduplicate history before plotting
+  const sparkData = (() => {
+    // 1. Ascending chronological order
+    const asc = [...history].reverse();
+    // 2. Drop fake 100% entries caused by API failures (score=100 with no details)
+    const real = asc.filter(h => !(h.score === 100 && (!h.details || h.details.length === 0)));
+    // 3. Deduplicate consecutive identical scores so the line shows actual changes
+    const deduped = real.reduce((acc, h) => {
+      if (acc.length === 0 || acc[acc.length - 1].score !== h.score) acc.push(h);
+      return acc;
+    }, []);
+    // 4. Take the 10 most recent meaningful points
+    return deduped.slice(-10).map((h, i) => ({
+      i,
+      score: h.score,
+      label: new Date(h.timestamp).toLocaleString([], {
+        month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      }),
+    }));
+  })();
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -96,14 +112,14 @@ const MetricsOverview = memo(({ readiness, history = [], darkMode = false }) => 
                     <Tooltip
                       contentStyle={{
                         fontSize: '10px',
-                        padding: '2px 6px',
+                        padding: '4px 8px',
                         border: 'none',
                         background: '#1e293b',
                         color: '#f1f5f9',
                         borderRadius: '4px',
                       }}
                       formatter={(val) => [`${val}%`, 'Score']}
-                      labelFormatter={() => ''}
+                      labelFormatter={(_, payload) => payload?.[0]?.payload?.label ?? ''}
                     />
                     <ReferenceLine y={70} stroke="#3b82f6" strokeDasharray="2 2" strokeWidth={1} />
                     <Line
