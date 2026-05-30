@@ -328,14 +328,23 @@ async def get_readiness(save: bool = False):
 async def generate_notes(request: GenerationRequest):
     variant = request.variant.lower()
     
-    # Fetch real data for context
-    jira_issues = await fetch_jira_tickets()
-    github_data = await fetch_github_data()
+    # Fetch real data and score for context
+    readiness = await get_readiness()
+    jira_issues = readiness["raw_jira"]
+    github_data = readiness["raw_github"]
+    score = readiness["score"]
+    verdict = readiness["verdict"]
+    details = "\n".join([f"- {d}" for d in readiness["details"]])
     
     jira_context = "\n".join([f"- {i['key']}: {i['summary']} ({i['status']})" for i in jira_issues])
     github_context = "\n".join([f"- PR: {pr['title']} (State: {pr['state']}, Approvals: {pr.get('approvals', 0)})" for pr in github_data['prs']])
     
     aggregated_data = f"""
+    SYSTEM READINESS SCORE: {score}%
+    SYSTEM VERDICT: {verdict}
+    DETAILED CHECKS:
+    {details or "All quality gates passed."}
+
     Jira Tickets:
     {jira_context or "No recent Jira activity."}
     
@@ -345,9 +354,31 @@ async def generate_notes(request: GenerationRequest):
     """
 
     prompts = {
-        "technical": f"You are a Senior Engineer. Generate technical release notes. Focus on implementation details and API contracts.\nInput: {aggregated_data}",
-        "qa": f"You are a Scrum Master. Generate a testing-focused release summary. Focus on risk areas and regression paths.\nInput: {aggregated_data}",
-        "executive": f"You are a Product Manager. Generate a high-level executive summary focusing on business value and outcomes (2-3 sentences).\nInput: {aggregated_data}"
+        "technical": f"You are a Senior Engineer. Generate technical release notes. Focus on implementation details and API contracts.\n"
+                     f"Constraints: Max 500 words. Use small, crisp paragraphs. Add double spacing between sections for readability.\n"
+                     f"Input: {aggregated_data}",
+        "qa": f"You are a Quality Assurance Lead and Scrum Master. Generate a 'QA & Release Readiness Summary'.\n"
+              f"The current system verdict is: {verdict} (Score: {score}%).\n\n"
+              f"CRITICAL INSTRUCTIONS:\n"
+              + (f"Since the verdict is NO-GO:\n"
+                 f"1. Clearly state that the verdict is NO-GO.\n"
+                 f"2. Explicitly list all reasons/blockers for this decision based on the 'DETAILED CHECKS' provided.\n"
+                 f"3. Detail the potential risks to the business and system if we were to release in this state.\n"
+                 if verdict == "NO-GO" else
+                 f"Since the verdict is GO:\n"
+                 f"1. Clearly state that the verdict is GO.\n"
+                 f"2. Summarize everything that is correct and verified (e.g., passed builds, approved PRs, completed tickets).\n"
+                 f"3. Confirm that all quality gates have been met successfully.\n") +
+              f"\nStructure the response with the following sections:\n"
+              f"1. **Executive QA Verdict**: A direct statement of the {verdict} status and score.\n"
+              f"2. **Evidence & Validation**: Summary of {'blockers and failures' if verdict == 'NO-GO' else 'successful checks'}.\n"
+              f"3. **Risk & Impact Analysis**: {'Potential risks' if verdict == 'NO-GO' else 'Confidence level and stability report'}.\n"
+              f"4. **Final Recommendation**: Clear justification for the {verdict} decision.\n"
+              f"Constraints: Max 500 words. Use small, crisp paragraphs. Add double spacing between sections for readability.\n"
+              f"Input Data: {aggregated_data}",
+        "executive": f"You are a Product Manager. Generate a high-level executive summary focusing on business value and outcomes.\n"
+                     f"Constraints: Max 500 words. Use small, crisp paragraphs. Add double spacing between sections for readability.\n"
+                     f"Input: {aggregated_data}"
     }
 
     if variant not in prompts:

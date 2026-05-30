@@ -36,6 +36,29 @@ function App() {
     finally { setHistoryLoading(false); }
   }, []);
 
+  const fetchNotes = useCallback(async (type) => {
+    setActiveTab(type);
+    setLoading(true);
+    abortControllerRef.current = new AbortController();
+    try {
+      const response = await axios.post(`/api/generate-notes`, {
+        variant: type,
+        raw_data: "" 
+      }, {
+        headers: { 'ngrok-skip-browser-warning': 'true' },
+        signal: abortControllerRef.current.signal
+      });
+      setContent(response.data.content);
+    } catch (error) {
+      if (!axios.isCancel(error)) {
+        setContent('**System Error:** Communication link with backend severed.');
+      }
+    } finally {
+      setLoading(false);
+      abortControllerRef.current = null;
+    }
+  }, []);
+
   const fetchReadiness = useCallback(async (save = false) => {
     setReadiness(prev => ({ ...prev, status: 'updating' }));
     try {
@@ -58,6 +81,13 @@ function App() {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
         fetchHistory(); // Refresh the list immediately
+
+        // AUTO-UPDATE QA SUMMARY: If data changed, regenerate the QA summary automatically
+        if (lastStateHashRef.current !== null && lastStateHashRef.current !== currentStateHash) {
+          console.log("DEBUG: Data change detected. Auto-regenerating QA Summary...");
+          fetchNotes('qa');
+        }
+
         if (save) {
           setShowSyncToast(true);
           setTimeout(() => setShowSyncToast(false), 3000);
@@ -68,7 +98,7 @@ function App() {
       console.error("Readiness fetch failed:", error.message);
       setReadiness(prev => ({ ...prev, status: 'error' }));
     }
-  }, [fetchHistory]);
+  }, [fetchHistory, fetchNotes]);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -133,30 +163,6 @@ function App() {
       abortControllerRef.current.abort();
       setLoading(false);
       setContent(prev => prev + '\n\n**Generation Cancelled by User.**');
-    }
-  };
-
-  const fetchNotes = async (type) => {
-    setActiveTab(type);
-    setLoading(true);
-    abortControllerRef.current = new AbortController();
-    try {
-      const response = await axios.post(`/api/generate-notes`, {
-        variant: type,
-        raw_data: "" 
-      }, {
-        headers: { 'ngrok-skip-browser-warning': 'true' },
-        signal: abortControllerRef.current.signal
-      });
-      setContent(response.data.content);
-      fetchReadiness();
-    } catch (error) {
-      if (!axios.isCancel(error)) {
-        setContent('**System Error:** Communication link with backend severed.');
-      }
-    } finally {
-      setLoading(false);
-      abortControllerRef.current = null;
     }
   };
 
