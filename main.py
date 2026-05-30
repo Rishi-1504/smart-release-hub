@@ -315,11 +315,30 @@ async def get_readiness(save: bool = False):
     if save:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO release_history (timestamp, score, verdict, details, raw_data) VALUES (?, ?, ?, ?, ?)",
-            (datetime.now().isoformat(), score, verdict, json.dumps(details), json.dumps(result))
-        )
-        conn.commit()
+        
+        # Change Detection: Check the last recorded entry
+        cursor.execute("SELECT raw_data FROM release_history ORDER BY id DESC LIMIT 1")
+        last_entry = cursor.fetchone()
+        
+        should_save = True
+        if last_entry:
+            try:
+                last_data = json.loads(last_entry[0])
+                # Compare critical indicators: score and the text details of checks
+                if last_data.get("score") == score and last_data.get("details") == details:
+                    should_save = False
+                    print("DEBUG: No changes detected in readiness state. Skipping database save.")
+            except Exception as e:
+                print(f"DEBUG: Error comparing history: {e}")
+
+        if should_save:
+            cursor.execute(
+                "INSERT INTO release_history (timestamp, score, verdict, details, raw_data) VALUES (?, ?, ?, ?, ?)",
+                (datetime.now().isoformat(), score, verdict, json.dumps(details), json.dumps(result))
+            )
+            conn.commit()
+            print(f"DEBUG: Change detected. Saved new audit record with score {score}%.")
+            
         conn.close()
 
     return result

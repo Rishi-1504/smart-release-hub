@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { marked } from 'marked';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, CheckCircle2, Clock, Calendar, Shield, Activity, RefreshCw } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Calendar, Shield } from 'lucide-react';
 import './App.css';
 
 // Components
@@ -22,7 +22,6 @@ function App() {
   const [settings, setSettings] = useState({});
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [showSyncToast, setShowSyncToast] = useState(false);
   
   const lastStateHashRef = useRef(null); // Tracks if Jira/GitHub data actually changed
   const abortControllerRef = useRef(null);
@@ -59,7 +58,7 @@ function App() {
     }
   }, []);
 
-  const fetchReadiness = useCallback(async (save = false) => {
+  const fetchReadiness = useCallback(async () => {
     setReadiness(prev => ({ ...prev, status: 'updating' }));
     try {
       const url = `/api/readiness?t=${Date.now()}`;
@@ -75,24 +74,18 @@ function App() {
       setLastSynced(new Date().toLocaleTimeString());
       setSyncCountdown(30);
 
-      // SAVE LOGIC: Manual trigger OR actual data change
-      if (save || (lastStateHashRef.current !== null && lastStateHashRef.current !== currentStateHash)) {
-        await axios.get(`/api/readiness?save=true&t=${Date.now()}`, {
-          headers: { 'ngrok-skip-browser-warning': 'true' }
-        });
-        fetchHistory(); // Refresh the list immediately
+      // Automated Save Logic: Persist to DB on every sync as requested
+      await axios.get(`/api/readiness?save=true&t=${Date.now()}`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      fetchHistory(); 
 
-        // AUTO-UPDATE QA SUMMARY: If data changed, regenerate the QA summary automatically
-        if (lastStateHashRef.current !== null && lastStateHashRef.current !== currentStateHash) {
-          console.log("DEBUG: Data change detected. Auto-regenerating QA Summary...");
-          fetchNotes('qa');
-        }
-
-        if (save) {
-          setShowSyncToast(true);
-          setTimeout(() => setShowSyncToast(false), 3000);
-        }
+      // AUTO-UPDATE QA SUMMARY: If data changed, regenerate the QA summary automatically
+      if (lastStateHashRef.current !== null && lastStateHashRef.current !== currentStateHash) {
+        console.log("DEBUG: Data change detected. Auto-regenerating QA Summary...");
+        fetchNotes('qa');
       }
+      
       lastStateHashRef.current = currentStateHash;
     } catch (error) {
       console.error("Readiness fetch failed:", error.message);
@@ -183,28 +176,10 @@ function App() {
             <p className="text-sm text-gray-500 mt-1">Operational Control &gt; {viewTitle}</p>
           </div>
           <div className="flex items-center gap-3">
-            <AnimatePresence>
-              {showSyncToast && (
-                <motion.div 
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="bg-green-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-2"
-                >
-                  <CheckCircle2 size={12} /> RECORD SAVED TO AUDIT LOG
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <button 
-              onClick={() => fetchReadiness(true)}
-              disabled={readiness.status === 'updating'}
-              className="sn-button flex items-center gap-2 px-6"
-            >
-              <Activity size={16} className={readiness.status === 'updating' ? 'animate-spin' : ''} />
-              {readiness.status === 'updating' ? 'SYNCING...' : 'TRIGGER MANUAL AUDIT'}
-            </button>
+            {/* Manual Audit Trigger removed - now automated */}
           </div>
-        </header>
+          </header>
+
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -246,14 +221,6 @@ function App() {
                     <Clock size={16} />
                     <span>Permanent Release History</span>
                   </div>
-                  <button 
-                    onClick={fetchHistory} 
-                    disabled={historyLoading}
-                    className="flex items-center gap-2 text-blue-500 hover:text-blue-600 font-bold transition-colors disabled:opacity-50"
-                  >
-                    <RefreshCw size={14} className={historyLoading ? 'animate-spin' : ''} />
-                    Refresh Logs
-                  </button>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="sn-table">
