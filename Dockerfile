@@ -1,28 +1,30 @@
-# Use an official Python runtime as a parent image
+# Stage 1: Build the React frontend
+FROM node:20-slim AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+# Stage 2: Python backend (production image)
 FROM python:3.12-slim
-
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-
-# Set work directory
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY requirements.txt /app/
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code
-COPY . /app/
+# Copy backend source
+COPY main.py ./
 
-# Expose port 8000
+# Copy built frontend from Stage 1
+COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
+
 EXPOSE 8000
-
-# Command to run the application
 CMD ["python", "main.py"]
