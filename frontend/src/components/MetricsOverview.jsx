@@ -59,7 +59,7 @@ const MetricsOverview = memo(({ readiness, history = [], darkMode = false }) => 
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-4xl font-bold text-gray-800 dark:text-white">
+              <span className="text-4xl font-bold" style={{ color: 'var(--sn-text-main)' }}>
                 {readiness.score}%
               </span>
               <span className="text-[10px] uppercase font-bold text-gray-400">Target: 70%</span>

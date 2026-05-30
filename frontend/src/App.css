@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
@@ -210,4 +211,29 @@ button, a, .sn-nav-item, [role="button"] {
 
 .dark .sn-table td {
   border-color: #334155;
+}
+
+/* AI panel dark mode — belt-and-suspenders for bg-white elements inside the panel */
+.dark .ai-panel-tab-bar {
+  background-color: #333;
+}
+
+.dark .ai-panel-toolbar {
+  background-color: #2b2b2b;
+}
+
+.dark .ai-panel-body {
+  background-color: #2b2b2b;
+  color: #f1f5f9;
+}
+
+/* Ensure all table rows contrast in dark mode */
+.dark tbody tr:hover {
+  background-color: rgba(255,255,255,0.04);
+}
+
+/* Verdict / score card text */
+.dark .sn-card p,
+.dark .sn-card span:not(.sn-card-header span) {
+  color: inherit;
 }

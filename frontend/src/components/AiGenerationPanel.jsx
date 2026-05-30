@@ -11,7 +11,7 @@ const AiGenerationPanel = ({ activeTab, fetchNotes, cancelNotes, content, loadin
   return (
     <div className="sn-card min-h-[500px] flex flex-col">
       {/* ServiceNow Workspace Tabs */}
-      <div className="bg-[#f8f9fa] dark:bg-[#333] border-b border-sn-border-color">
+      <div className="ai-panel-tab-bar bg-[#f8f9fa] dark:bg-[#333] border-b border-sn-border-color">
         <div className="flex px-4 pt-2">
           {tabs.map((tab) => (
             <button
@@ -32,7 +32,7 @@ const AiGenerationPanel = ({ activeTab, fetchNotes, cancelNotes, content, loadin
       </div>
 
       {/* Header Actions Area */}
-      <div className="px-6 py-3 border-b border-sn-border-color flex justify-between items-center bg-white dark:bg-[#2b2b2b]">
+      <div className="ai-panel-toolbar px-6 py-3 border-b border-sn-border-color flex justify-between items-center bg-white dark:bg-[#2b2b2b]">
         <div className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-gray-400">
           <Wand2 size={14} />
           <span>AI Content Generator</span>
@@ -93,7 +93,7 @@ const AiGenerationPanel = ({ activeTab, fetchNotes, cancelNotes, content, loadin
       </div>
 
       {/* Content Workspace */}
-      <div className="p-8 md:p-12 flex-1 bg-white dark:bg-[#2b2b2b]">
+      <div className="ai-panel-body p-8 md:p-12 flex-1 bg-white dark:bg-[#2b2b2b]">
         {loading ? (
           <SkeletonLoader />
         ) : content.startsWith('### System Ready') ? (
