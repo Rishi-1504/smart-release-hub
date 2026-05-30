@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, CheckCircle, BarChart3, Sparkles, Wand2 } from 'lucide-react';
+import { Cpu, CheckCircle, BarChart3, Sparkles, Wand2, FileText } from 'lucide-react';
 
 const AiGenerationPanel = ({ activeTab, fetchNotes, cancelNotes, content, loading, getMarkdownText }) => {
   const tabs = [
@@ -96,16 +96,40 @@ const AiGenerationPanel = ({ activeTab, fetchNotes, cancelNotes, content, loadin
       <div className="p-8 md:p-12 flex-1 bg-white dark:bg-[#2b2b2b]">
         {loading ? (
           <SkeletonLoader />
+        ) : content.startsWith('### System Ready') ? (
+          <EmptyState tabs={tabs} fetchNotes={fetchNotes} />
         ) : (
-          <article 
+          <article
             className="markdown-content max-w-none"
-            dangerouslySetInnerHTML={getMarkdownText()} 
+            dangerouslySetInnerHTML={getMarkdownText()}
           />
         )}
       </div>
     </div>
   );
 };
+
+const EmptyState = ({ tabs, fetchNotes }) => (
+  <div className="flex flex-col items-center justify-center h-full py-16 text-center">
+    <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+      <FileText size={28} className="text-gray-300 dark:text-slate-500" />
+    </div>
+    <p className="text-base font-semibold text-gray-500 dark:text-slate-400 mb-1">No content generated yet</p>
+    <p className="text-sm text-gray-400 dark:text-slate-500 mb-6">Choose a report type below to generate AI-powered release notes</p>
+    <div className="flex gap-3">
+      {tabs.map(tab => (
+        <button
+          key={tab.id}
+          onClick={() => fetchNotes(tab.id)}
+          className="flex items-center gap-2 px-4 py-2 rounded border border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-600 dark:text-slate-300 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors bg-white dark:bg-slate-800"
+        >
+          {tab.icon}
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  </div>
+);
 
 const SkeletonLoader = () => (
   <div className="space-y-6 animate-pulse">

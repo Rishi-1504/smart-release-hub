@@ -15,7 +15,7 @@ function App() {
   const [content, setContent] = useState('### System Ready\n\nSelect a variant to generate release notes.');
   const [readiness, setReadiness] = useState({ score: 0, verdict: 'INIT', details: [], status: 'initializing' });
   const [loading, setLoading] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
   const [activeView, setActiveView] = useState('dashboard');
   const [lastSynced, setLastSynced] = useState(new Date().toLocaleTimeString());
   const [syncCountdown, setSyncCountdown] = useState(30);
@@ -131,6 +131,7 @@ function App() {
     } else {
       document.documentElement.classList.remove('dark');
     }
+    localStorage.setItem('darkMode', darkMode);
   }, [darkMode]);
 
   const updateSetting = async (key, value) => {
@@ -157,6 +158,38 @@ function App() {
       setLoading(false);
       setContent(prev => prev + '\n\n**Generation Cancelled by User.**');
     }
+  };
+
+  const SETTING_DESCRIPTIONS = {
+    weight_blocker: 'Points deducted per open High/Highest priority Jira ticket (blocker)',
+    weight_untested: 'Points deducted per incomplete or in-progress Jira ticket',
+    cap_untested: 'Maximum total deduction for incomplete tickets (ceiling)',
+    weight_failed_build: 'Points deducted when the last GitHub Actions build failed',
+    weight_unmerged_pr: 'Points deducted per open (unmerged) Pull Request',
+    cap_unmerged_pr: 'Maximum total deduction for unmerged PRs (ceiling)',
+    weight_pending_approval: 'Points deducted per PR with zero approvals',
+    cap_pending_approval: 'Maximum total deduction for unapproved PRs (ceiling)',
+    target_score: 'Minimum readiness score required to receive a GO verdict',
+  };
+
+  const exportHistoryCSV = () => {
+    const rows = [['Date & Time', 'Verdict', 'Score', 'Details']];
+    history.forEach(h => {
+      rows.push([
+        new Date(h.timestamp).toLocaleString(),
+        h.verdict,
+        `${h.score}%`,
+        h.details.join(' | '),
+      ]);
+    });
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `release-history-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const renderContent = () => {
@@ -191,8 +224,8 @@ function App() {
           >
             {activeView === 'dashboard' && (
               <>
-                <MetricsOverview readiness={readiness} />
-                <AiGenerationPanel 
+                <MetricsOverview readiness={readiness} history={history} darkMode={darkMode} />
+                <AiGenerationPanel
                   activeTab={activeTab}
                   fetchNotes={fetchNotes}
                   cancelNotes={cancelNotes}
@@ -212,7 +245,7 @@ function App() {
                 getMarkdownText={getMarkdownText}
               />
             )}
-            {activeView === 'readiness' && <MetricsOverview readiness={readiness} />}
+            {activeView === 'readiness' && <MetricsOverview readiness={readiness} history={history} darkMode={darkMode} />}
             
             {activeView === 'history' && (
               <div className="sn-card">
@@ -221,6 +254,15 @@ function App() {
                     <Clock size={16} />
                     <span>Permanent Release History</span>
                   </div>
+                  {history.length > 0 && (
+                    <button
+                      onClick={exportHistoryCSV}
+                      className="sn-button text-[10px] py-1 px-3"
+                      title="Export as CSV"
+                    >
+                      Export CSV
+                    </button>
+                  )}
                 </div>
                 <div className="overflow-x-auto">
                   <table className="sn-table">
@@ -285,7 +327,7 @@ function App() {
                       <div key={key} className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-slate-700 last:border-0">
                         <div className="flex flex-col">
                           <span className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wide">{key.replace(/_/g, ' ')}</span>
-                          <span className="text-[10px] text-gray-400">Impact on the final readiness score</span>
+                          <span className="text-[10px] text-gray-400">{SETTING_DESCRIPTIONS[key] || 'Impact on the final readiness score'}</span>
                         </div>
                         <input 
                           type="number" 
@@ -322,14 +364,15 @@ function App() {
   };
 
   return (
-    <DashboardLayout 
-      darkMode={darkMode} 
+    <DashboardLayout
+      darkMode={darkMode}
       setDarkMode={setDarkMode}
       activeView={activeView}
       setActiveView={setActiveView}
       lastSynced={lastSynced}
       syncCountdown={syncCountdown}
       status={readiness.status}
+      onRefresh={fetchReadiness}
     >
       {renderContent()}
     </DashboardLayout>
