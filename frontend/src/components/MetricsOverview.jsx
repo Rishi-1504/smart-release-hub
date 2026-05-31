@@ -1,10 +1,10 @@
 import React, { memo } from 'react';
 import { ShieldCheck, AlertTriangle, CheckCircle2, ListFilter, ExternalLink } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, Tooltip, YAxis, ReferenceLine } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 const JIRA_BASE = 'https://rishigtripathi1979.atlassian.net/browse/';
 
-const MetricsOverview = memo(({ readiness, history = [], darkMode = false }) => {
+const MetricsOverview = memo(({ readiness, darkMode = false }) => {
   const isGo = readiness.verdict === 'GO';
   const scoreColor = isGo ? '#278efc' : '#e91e63';
   const trackColor = darkMode ? '#334155' : '#f2f2f2';
@@ -22,28 +22,6 @@ const MetricsOverview = memo(({ readiness, history = [], darkMode = false }) => 
   const untested = rawJira.filter(
     i => i.status !== 'Done' && !(i.priority === 'Highest' || i.priority === 'High')
   );
-
-  // Sparkline: clean and deduplicate history before plotting
-  const sparkData = (() => {
-    // 1. Ascending chronological order
-    const asc = [...history].reverse();
-    // 2. Drop fake 100% entries caused by API failures (score=100 with no details)
-    const real = asc.filter(h => !(h.score === 100 && (!h.details || h.details.length === 0)));
-    // 3. Deduplicate consecutive identical scores so the line shows actual changes
-    const deduped = real.reduce((acc, h) => {
-      if (acc.length === 0 || acc[acc.length - 1].score !== h.score) acc.push(h);
-      return acc;
-    }, []);
-    // 4. Take the 10 most recent meaningful points
-    return deduped.slice(-10).map((h, i) => ({
-      i,
-      score: h.score,
-      label: new Date(h.timestamp).toLocaleString([], {
-        month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit',
-      }),
-    }));
-  })();
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -100,41 +78,6 @@ const MetricsOverview = memo(({ readiness, history = [], darkMode = false }) => 
               />
             </div>
           </div>
-
-          {/* Score sparkline */}
-          {sparkData.length > 1 && (
-            <div className="w-full mb-2">
-              <p className="text-[9px] uppercase tracking-wider text-gray-400 text-center mb-1">Score Trend</p>
-              <div className="w-full h-12">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={sparkData} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
-                    <YAxis domain={[0, 100]} hide />
-                    <Tooltip
-                      contentStyle={{
-                        fontSize: '10px',
-                        padding: '4px 8px',
-                        border: 'none',
-                        background: '#1e293b',
-                        color: '#f1f5f9',
-                        borderRadius: '4px',
-                      }}
-                      formatter={(val) => [`${val}%`, 'Score']}
-                      labelFormatter={(_, payload) => payload?.[0]?.payload?.label ?? ''}
-                    />
-                    <ReferenceLine y={70} stroke="#3b82f6" strokeDasharray="2 2" strokeWidth={1} />
-                    <Line
-                      type="monotone"
-                      dataKey="score"
-                      stroke={scoreColor}
-                      strokeWidth={2}
-                      dot={{ r: 2, fill: scoreColor, strokeWidth: 0 }}
-                      activeDot={{ r: 3 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
 
           <div className={`w-full p-3 rounded-sm text-center font-bold text-sm border ${
             isGo
@@ -241,8 +184,7 @@ const MetricsOverview = memo(({ readiness, history = [], darkMode = false }) => 
   prev.readiness.score === next.readiness.score &&
   prev.readiness.verdict === next.readiness.verdict &&
   prev.readiness.details.length === next.readiness.details.length &&
-  prev.darkMode === next.darkMode &&
-  prev.history.length === next.history.length
+  prev.darkMode === next.darkMode
 );
 
 export default MetricsOverview;

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Bell, Settings, User, Rocket, RefreshCw } from 'lucide-react';
+import { Search, Settings, Rocket, RefreshCw } from 'lucide-react';
 
 const TopHeader = ({ lastSynced, syncCountdown, status, setActiveView, onRefresh }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,18 +98,11 @@ const TopHeader = ({ lastSynced, syncCountdown, status, setActiveView, onRefresh
           <button onClick={onRefresh} title="Sync Now" className="hover:text-gray-300 transition-colors">
             <RefreshCw size={17} />
           </button>
-          <Bell size={18} className="cursor-pointer hover:text-gray-300 transition-colors" />
           <Settings
-            size={18} 
-            className="cursor-pointer hover:text-gray-300 transition-colors" 
+            size={18}
+            className="cursor-pointer hover:text-gray-300 transition-colors"
             onClick={() => setActiveView('settings')}
           />
-          <div className="flex items-center gap-2 cursor-pointer hover:bg-white/10 px-2 py-1 rounded transition-colors">
-            <div className="w-6 h-6 bg-gray-500 rounded-full flex items-center justify-center">
-              <User size={14} />
-            </div>
-            <span className="text-sm font-medium hidden sm:inline">Admin User</span>
-          </div>
         </div>
       </div>
     </header>
